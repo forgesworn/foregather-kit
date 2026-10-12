@@ -1,7 +1,7 @@
 import {
   init, createStoredCodec, createKithmootCodec, createResolverClient,
   createLiveOffer, createLivePairing, deriveSpokenWords, deriveDirectionalWords,
-  createCharacterOffer, createCharacterPairing, createRendezvousCode, canonicalRendezvousCode,
+  createCharacterOffer, createCharacterPairing, createRendezvousCode, canonicalRendezvousCode, formatCharacterCode, accessSecretOdds,
   type Envelope, type Allocation, type LiveSession,
 } from '@forgesworn/foregather-kit';
 
@@ -55,6 +55,10 @@ const secretCode: string = charOffer.secretCode;
 const charGate = createCharacterPairing({...charOffer,namespace:'example.rooms',purpose:'bootstrap',role:'inviter',now});
 charGate.dispose();
 const publicCode: string = canonicalRendezvousCode(createRendezvousCode({length:6}));
+const readableCode: string = formatCharacterCode(secretCode);
+const possibilities: bigint = accessSecretOdds({format:'characters',count:6,attempts:1}).possibilities;
+// @ts-expect-error Digits-only generation is not an available secret format.
+accessSecretOdds({format:'digits',count:6});
 // @ts-expect-error Character access requires its own secret field.
 createCharacterPairing({...offer,namespace:'example.rooms',purpose:'bootstrap',role:'recipient',now});
 // @ts-expect-error Character offers require trusted time.

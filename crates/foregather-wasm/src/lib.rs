@@ -144,6 +144,13 @@ pub fn canonical_rendezvous_code(value: &str) -> Result<String, JsValue> {
 }
 
 #[wasm_bindgen]
+pub fn format_character_code(value: &str) -> Result<String, JsValue> {
+    Ok(live::format_character_code(value)
+        .map_err(error)?
+        .to_string())
+}
+
+#[wasm_bindgen]
 pub fn spoken_words(
     secret: &[u8],
     context: &str,

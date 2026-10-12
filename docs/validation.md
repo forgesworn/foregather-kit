@@ -12,7 +12,7 @@ All invitation, pairing and management material used by these checks is syntheti
 | Live native core | 13 tests: character encoding/generation and length separation, character/word interoperability, public-alias bounds and wrong-code budgets; frozen full transcript/keys, confirmation, wrong codes/context/roles, point validation, cancellation budget, fallible entropy, expiry/clock rollback, ordering/tampering/replay, configurable codes |
 | Spoken native core | 2 tests: frozen en-v1 hash, v2 word/directional vectors and domain/input limits |
 | Resolver | 8 tests: restart, durable quotas, expiry, management authority, write-once races, bounded HTTP, stored-capability hashes and cancellation/work budget |
-| Node/WASM | 29 tests: character/word/native interop and independent bit encoding, public-code canonicalisation; successful unused-body and error-body cancellation, native/WASM live pairing, stored and live Node AES interoperability, spoken HMAC agreement, wrong-code/lifecycle/bounds and existing resolver client cases |
+| Node/WASM | 31 tests: grouped/raw character/native interoperability, all lengths and malformed grouping, exact guessing-odds fixtures, independent bit encoding and public-code canonicalisation; successful unused-body and error-body cancellation, native/WASM live pairing, stored and live Node AES interoperability, spoken HMAC agreement, wrong-code/lifecycle/bounds and existing resolver client cases |
 | Independent PAKE implementation | Python spake2 0.9 reproduces both native hellos, shared-key derivations, confirmation proofs, verification words and encrypted bootstrap; separate pinned venv |
 | Real Chromium codec | Stored frozen vectors opened and browser ciphertext authenticated by Node; zero external requests |
 | Real resolver process | Native inviter to WASM recipient; restart persistence; independent deletion; durable creation budget |
@@ -23,14 +23,14 @@ All invitation, pairing and management material used by these checks is syntheti
 | Rust distribution | Core packaged and compiled with all features, including opt-in live pairing |
 | Dependency checks | RustSec and npm advisory scans; cargo-deny permissive licences/registry sources |
 
-There are 64 passing Rust/Node tests (35 Rust, 29 Node), three Rustdoc examples, plus the separate
+There are 67 Rust/Node tests (36 Rust, 31 Node), three Rustdoc examples, plus the separate
 Chromium/service/package/reference journeys. The Python check establishes
 independent implementation agreement, not a protocol proof or security audit.
 The actual installed browser tarball is compiled with TypeScript 5.9.3 in strict
 NodeNext mode. Positive cases cover all public exports; negative cases enforce
 byte payloads, required time, fixed roles/profile and validator/tuple shapes.
 
-The current WASM is 639,282 bytes (235,984 bytes gzipped); the browser tarball
+The 0.3.0 local WASM measurement was 639,282 bytes (235,984 bytes gzipped); its browser tarball
 with licence texts is 271,971 bytes. The last local Chromium initialization was
 8.6 ms. These are single-machine diagnostics, not a phone performance or memory
 guarantee. Live PAKE increases

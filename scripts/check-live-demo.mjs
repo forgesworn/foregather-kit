@@ -10,7 +10,9 @@ try {
   const requests=[],external=[];
   const watch=(page,client)=>page.on('request',r=>{if(!r.url().startsWith(origin))external.push(r.url());if(r.url().includes('/relay/')||r.url().includes('/rooms'))requests.push({client,url:r.url(),method:r.method(),body:r.postData()});});
   const host=await browser.newPage(),guest=await browser.newPage();watch(host,'host');watch(guest,'guest');
-  await host.goto(origin);await host.locator('#create').click();await host.locator('#offer').waitFor({state:'visible'});
+  await host.goto(origin);
+  await host.getByText('Chance per random guess: 1 in about 17.59 trillion (44 bits).',{exact:true}).waitFor();
+  await host.locator('#create').click();await host.locator('#offer').waitFor({state:'visible'});
   const link=await host.locator('#link').getAttribute('href'),words=await host.locator('#secret').textContent();
   assert.equal(words.split(' ').length,4);assert.equal(link.includes(words),false);
   // Sharing controls copy exactly the selected value; denied clipboard access stays usable.
@@ -51,10 +53,15 @@ try {
   for(const format of ['words','characters']) {
     const h=await browser.newPage(),g=await browser.newPage();watch(h,`${format}Host`);watch(g,`${format}Guest`);
     await h.goto(origin);await h.locator('#format').selectOption(format);await h.locator('#length').fill('6');
+    if(format==='characters') {
+      await h.getByText('Chance per random guess: 1 in about 1.07 billion (30 bits).',{exact:true}).waitFor();
+      await h.locator('#length').fill('8');await h.getByText('Chance per random guess: 1 in about 1.1 trillion (40 bits).',{exact:true}).waitFor();
+      await h.locator('#length').fill('6');
+    }
     await h.locator('#create').click();await h.locator('#offer').waitFor({state:'visible'});
     const roomCode=await h.locator('#room-code').textContent(),secret=await h.locator('#secret').textContent();
-    assert.match(roomCode,/^[0-9A-HJKMNP-TV-Z]{6}$/);
-    if(format==='words')assert.equal(secret.split(' ').length,6);else assert.match(secret,/^[0-9A-HJKMNP-TV-Z]{6}$/);
+    assert.match(roomCode,/^[0-9A-HJKMNP-TV-Z]{3}-[0-9A-HJKMNP-TV-Z]{3}$/);
+    if(format==='words')assert.equal(secret.split(' ').length,6);else assert.match(secret,/^[0-9A-HJKMNP-TV-Z]{3}-[0-9A-HJKMNP-TV-Z]{3}$/);
     await g.setViewportSize({width:375,height:812});
     await g.goto(origin);await g.locator('#room').fill(roomCode.toLowerCase());await g.locator('#room').press('Enter');
     await g.locator('#guest').waitFor({state:'visible'});
@@ -65,7 +72,10 @@ try {
     const candidate=`Synthetic ${format} room-code handoff`;await h.locator('#invitation').fill(candidate);await h.locator('#transfer').click();
     await g.locator('#received').waitFor({state:'visible'});assert.equal(await g.locator('#payload').textContent(),candidate);
     assert.equal(await g.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
-    for(const r of requests.filter(r=>r.client.startsWith(format)))assert.equal(r.body?.includes(secret)??false,false);
+    for(const r of requests.filter(r=>r.client.startsWith(format))) {
+      assert.equal(r.body?.includes(secret)??false,false);
+      if(format==='characters')assert.equal(r.body?.includes(secret.replaceAll('-',''))??false,false);
+    }
   }
   const codeHost=await browser.newPage(),codeGuest=await browser.newPage();
   await codeHost.goto(origin);await codeHost.locator('#format').selectOption('characters');await codeHost.locator('#create').click();await codeHost.locator('#offer').waitFor({state:'visible'});
@@ -93,7 +103,7 @@ try {
   for(let i=0;i<65;i++){const r=await register(room);if(r.status===429){refused=true;break;}assert.equal(r.status,201);const code=(await r.json()).roomCode;assert.equal(allocated.has(code),false);allocated.add(code);}
   assert.equal(refused,true);
   let limited=false;
-  for(let i=0;i<241;i++){const r=await fetch(`${origin}/rooms/${publicCode}`);if(r.status===429){limited=true;break;}assert.equal(r.status,200);}
+  for(let i=0;i<241;i++){const r=await fetch(`${origin}/rooms/${publicCode.replaceAll('-','')}`);if(r.status===429){limited=true;break;}assert.equal(r.status,200);}
   assert.equal(limited,true);
   const route=`${origin}/relay/BwcHBwcHBwcHBwcHBwcHBw/inviter/hello`;
   const write=()=>fetch(route,{method:'POST',headers:{Origin:origin,'Content-Type':'application/json'},body:JSON.stringify('synthetic')});
@@ -101,7 +111,7 @@ try {
   const racing=await Promise.all([write(),write()]);assert.deepEqual(racing.map(r=>r.status).sort(),[201,409]);
   assert.equal((await fetch(route.replace('/hello','/payload'),{method:'POST',headers:{Origin:origin},body:'x'.repeat(24577)})).status,413);
   assert.deepEqual(external,[]);
-  console.log(JSON.stringify({passed:true,twoBrowserClients:true,wrongCodeRejected:true,noSecretOrPlaintextAtRelay:true,explicitHandoffAndReview:true,wordAndCharacterSecrets:true,publicRoomLookup:true,publicCodeCannotPair:true,clipboardAndDenial:true,keyboardAndMobileHandoff:true,restartAfterFailure:true,expiredAliasRejected:true,directoryBudgets:true,writeOnceRace:true,externalRequests:0,browser:browser.version()}));
+  console.log(JSON.stringify({passed:true,twoBrowserClients:true,wrongCodeRejected:true,noSecretOrPlaintextAtRelay:true,explicitHandoffAndReview:true,wordAndCharacterSecrets:true,groupedCodesAccepted:true,liveGuessingOdds:true,publicRoomLookup:true,publicCodeCannotPair:true,clipboardAndDenial:true,keyboardAndMobileHandoff:true,restartAfterFailure:true,expiredAliasRejected:true,directoryBudgets:true,writeOnceRace:true,externalRequests:0,browser:browser.version()}));
 } finally {
   await browser?.close();
   if(child.exitCode===null){child.kill('SIGINT');await once(child,'exit');}

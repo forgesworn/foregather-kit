@@ -2,7 +2,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { createHmac } from 'node:crypto';
-import { init, createLiveOffer, createLivePairing, deriveSpokenWords, deriveDirectionalWords, createCharacterOffer, createCharacterPairing, createRendezvousCode, canonicalRendezvousCode } from '../packages/browser/dist/index.mjs';
+import { init, createLiveOffer, createLivePairing, deriveSpokenWords, deriveDirectionalWords, createCharacterOffer, createCharacterPairing, createRendezvousCode, canonicalRendezvousCode, formatCharacterCode, accessSecretOdds } from '../packages/browser/dist/index.mjs';
+const oddsBeforeInit=accessSecretOdds({format:'characters',count:6});
 await init({module_or_path:readFileSync(new URL('../packages/browser/dist/foregather_wasm_bg.wasm',import.meta.url))});
 const now=1800000000, namespace='example.rooms', purpose='bootstrap';
 function pair(secretWords) {
@@ -69,7 +70,7 @@ test('character access secrets pair, reject wrong/public codes and keep one-use 
     assert.equal(offer.secretCode.length,characterCount);
     assert.equal(offer.secretWords,undefined);
     const a=createCharacterPairing({...offer,namespace,purpose,role:'inviter',now});
-    const b=createCharacterPairing({...offer,secretCode:offer.secretCode.toLowerCase(),namespace,purpose,role:'recipient',now});
+    const b=createCharacterPairing({...offer,secretCode:formatCharacterCode(offer.secretCode).toLowerCase(),namespace,purpose,role:'recipient',now});
     const ax=a.start({now}),bx=b.start({now}),ah=ax.hello(),bh=bx.hello();
     const ap=ax.finish({peerHello:bh,now}),bp=bx.finish({peerHello:ah,now}),aproof=ap.proof(),bproof=bp.proof();
     const ac=ap.confirm({peerProof:bproof,now}),bc=bp.confirm({peerProof:aproof,now});
@@ -91,13 +92,34 @@ test('character access secrets pair, reject wrong/public codes and keep one-use 
 test('character and public code bounds, alphabet, context and entropy presentation are explicit',()=>{
   const offer=createCharacterOffer({namespace,purpose,now});
   for(const characterCount of [5,33,2**32+6,6.5])assert.throws(()=>createCharacterOffer({namespace,purpose,characterCount,now}));
-  for(const secretCode of ['ABC23I','ABC23O','ABC23L','ABC23U','ABC-234','ABCDE','ABC234é'])assert.throws(()=>createCharacterPairing({...offer,secretCode,namespace,purpose,role:'recipient',now}));
+  for(const secretCode of ['ABC23I','ABC23O','ABC23L','ABC23U','AB-C234','ABCDE','ABC234é'])assert.throws(()=>createCharacterPairing({...offer,secretCode,namespace,purpose,role:'recipient',now}));
   assert.throws(()=>createCharacterPairing({...offer,namespace:'wrong.app',purpose,role:'recipient',now}));
   for(const length of [6,8,12,32]) {
     const code=createRendezvousCode({length});assert.equal(code.length,length);
     assert.match(code,/^[0-9A-HJKMNP-TV-Z]+$/);assert.equal(canonicalRendezvousCode(' '+code.toLowerCase()+' '),code);
   }
-  assert.throws(()=>createRendezvousCode({length:5}));assert.throws(()=>canonicalRendezvousCode('ABC-234'));
+  assert.throws(()=>createRendezvousCode({length:5}));assert.equal(canonicalRendezvousCode('ABC-234'),'ABC234');
+});
+
+test('grouped presentation is reversible for every length and refuses malformed separators',()=>{
+  assert.equal(formatCharacterCode('dfvsjx'),'DFV-SJX');
+  for(let length=6;length<=32;length++) {
+    const raw='0123456789ABCDEFGHJKMNPQRSTVWXYZ'.slice(0,length),grouped=formatCharacterCode(raw);
+    assert.equal(grouped,raw.match(/.{1,3}/g).join('-'));
+    assert.equal(formatCharacterCode(grouped),grouped);
+    assert.equal(canonicalRendezvousCode(' '+grouped.toLowerCase()+'\n'),raw);
+  }
+  for(const bad of ['-ABC-234','ABC-234-','ABC--234','AB-C234','ABC2-34','ABC234-','ABC 234','ABC_234','ABC–234','ABC-23I','ABC-23U','A-'.repeat(33)])assert.throws(()=>formatCharacterCode(bad));
+});
+test('guessing odds use exact sample sizes and validate format, length and endpoint budgets',()=>{
+  assert.deepEqual(oddsBeforeInit,{bits:30,possibilities:1073741824n,guesses:1});
+  for(const [format,count,bits,possibilities] of [
+    ['characters',6,30,1073741824n],['characters',8,40,1099511627776n],['characters',12,60,1152921504606846976n],
+    ['words',2,22,4194304n],['words',3,33,8589934592n],['words',4,44,17592186044416n],
+    ['characters',32,160,1461501637330902918203684832716283019655932542976n],
+  ])assert.deepEqual(accessSecretOdds({format,count}),{bits,possibilities,guesses:1});
+  assert.equal(accessSecretOdds({format:'characters',count:6,attempts:5}).guesses,5);
+  for(const input of [{format:'digits',count:6},{format:'characters',count:5},{format:'characters',count:33},{format:'words',count:1},{format:'words',count:17},{format:'words',count:2.5},{format:'words',count:NaN},{format:'words',count:4,attempts:0},{format:'words',count:4,attempts:6},{format:'words',count:4,attempts:1.5}])assert.throws(()=>accessSecretOdds(input));
 });
 
 

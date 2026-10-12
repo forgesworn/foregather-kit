@@ -1,4 +1,4 @@
-import initWasm, { seal_envelope, open_envelope, invitation_locator, generate_live_offer, generate_character_offer, generate_rendezvous_code, canonical_rendezvous_code, spoken_words, spoken_directional_words, LiveGate } from './foregather_wasm.js';
+import initWasm, { seal_envelope, open_envelope, invitation_locator, generate_live_offer, generate_character_offer, generate_rendezvous_code, canonical_rendezvous_code, format_character_code, spoken_words, spoken_directional_words, LiveGate } from './foregather_wasm.js';
 
 const MAX_BYTES = 32768;
 const invalid = () => { throw new Error('Invalid invitation'); };
@@ -177,6 +177,15 @@ export function createCharacterOffer({ namespace, purpose, characterCount = 6, l
 /** Public alias only; applications own its bounded, expiring session directory. */
 export function createRendezvousCode({length = 6} = {}) { return generate_rendezvous_code(integer(length, 6, 32)); }
 export function canonicalRendezvousCode(code) { return canonical_rendezvous_code(text(code,64)); }
+/** Presentation only. Private codes must never be sent to a directory or logged. */
+export function formatCharacterCode(code) { return format_character_code(text(code,64)); }
+/** Mathematical bound for uniformly generated secrets, not a security rating of arbitrary text. */
+export function accessSecretOdds({format,count,attempts=1}) {
+  if(!['words','characters'].includes(format))invalid();
+  const bits=integer(count,format==='words'?2:6,format==='words'?16:32)*(format==='words'?11:5);
+  const possibilities=1n<<BigInt(bits);
+  return Object.freeze({bits,possibilities,guesses:integer(attempts,1,5)});
+}
 export function createCharacterPairing({ session, secretCode, namespace, purpose, role, attempts = 1, now }) {
   if (!session || typeof session !== 'object' || !['inviter','recipient'].includes(role)) invalid();
   for (const key of ['profile','namespace','purpose','locator']) text(session[key],128);

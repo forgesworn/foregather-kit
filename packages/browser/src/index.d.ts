@@ -43,3 +43,7 @@ export function createCharacterOffer(input: { namespace: string; purpose: string
 export function createCharacterPairing(input: { session: LiveSession; secretCode: string; namespace: string; purpose: string; role: 'inviter' | 'recipient'; attempts?: number; now: number }): LivePairing;
 export function createRendezvousCode(input?: {length?: number}): string;
 export function canonicalRendezvousCode(code: string): string;
+/** Optional hyphens between triples are accepted; the canonical code stays unseparated. */
+export function formatCharacterCode(code: string): string;
+/** Applies to independent uniform generation; character count excludes separators. */
+export function accessSecretOdds(input: {format: 'words' | 'characters'; count: number; attempts?: number}): Readonly<{bits: number; possibilities: bigint; guesses: number}>;

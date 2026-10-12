@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.3.1 - 2026-10-12 (human-readable codes)
+
+* Display/copy character codes in triples (`DFV-SJX`); accept grouped or plain
+  input consistently in Rust, WASM and browser lookup/pairing. Reject malformed
+  grouping and preserve all canonical passwords and frozen protocol vectors.
+* Add reusable `formatCharacterCode` and exact BigInt `accessSecretOdds` browser
+  helpers, with a zeroizing native formatter and strict consumer coverage.
+* Show per-guess odds for the selected secret and a comparison table. Document
+  uniform generation, combined endpoint budgets, expiry and public-alias lookup.
+* Include the responsive live-demo polish and keyboard/clipboard/restart checks.
+
 ## 0.3.0 - 2026-10-12 (experimental character codes)
 
 * Add configurable 6–32 character access secrets using the separately frozen

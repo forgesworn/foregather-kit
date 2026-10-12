@@ -243,7 +243,7 @@ fn character_encoding_is_frozen_canonical_length_bound_and_redacted() {
         assert!(!format!("{secret:?}").contains(secret.expose_words()));
     }
     for code in [
-        "ABCDE", "ABC234I", "ABC234O", "ABC234L", "ABC234U", "ABC-234", "ABC 234", "ABC23é",
+        "ABCDE", "ABC234I", "ABC234O", "ABC234L", "ABC234U", "AB-C234", "ABC 234", "ABC23é",
     ] {
         assert!(PairingSecret::from_characters(code).is_err());
         assert!(RendezvousCode::parse(code).is_err());
@@ -260,6 +260,53 @@ fn character_encoding_is_frozen_canonical_length_bound_and_redacted() {
 }
 
 #[test]
+fn grouped_codes_preserve_passwords_and_aliases_and_reject_malformed_separators() {
+    assert_eq!(format_character_code("dfvsjx").unwrap().as_str(), "DFV-SJX");
+    for length in 6..=32 {
+        let raw = &CHARACTER_ALPHABET[..length];
+        let formatted = format_character_code(raw).unwrap();
+        let expected = raw
+            .as_bytes()
+            .chunks(3)
+            .map(|v| std::str::from_utf8(v).unwrap())
+            .collect::<Vec<_>>()
+            .join("-");
+        assert_eq!(formatted.as_str(), expected);
+        assert_eq!(format_character_code(&formatted).unwrap(), formatted);
+        assert_eq!(
+            PairingSecret::from_characters(&formatted)
+                .unwrap()
+                .expose_words(),
+            PairingSecret::from_characters(raw).unwrap().expose_words()
+        );
+        assert_eq!(
+            RendezvousCode::parse(&format!(" {}\n", formatted.to_ascii_lowercase()))
+                .unwrap()
+                .as_str(),
+            raw
+        );
+    }
+    for value in [
+        "-ABC-234",
+        "ABC-234-",
+        "ABC--234",
+        "AB-C234",
+        "ABC2-34",
+        "ABC234-",
+        "ABC 234",
+        "ABC_234",
+        "ABC–234",
+        "ABC-23I",
+        "ABC-23U",
+    ] {
+        assert!(format_character_code(value).is_err());
+        assert!(PairingSecret::from_characters(value).is_err());
+        assert!(RendezvousCode::parse(value).is_err());
+    }
+    assert!(format_character_code(&"A-".repeat(33)).is_err());
+}
+
+#[test]
 fn character_secrets_pair_with_their_canonical_word_password_without_wire_changes() {
     for length in [6, 7, 8, 12, 32] {
         let (secret, code) = PairingSecret::generate_characters(length, &mut OsRng).unwrap();
@@ -273,7 +320,8 @@ fn character_secrets_pair_with_their_canonical_word_password_without_wire_change
             .unwrap()
             .start(Role::Inviter, NOW, &mut OsRng)
             .unwrap();
-        let b = PairingGate::new(s, PairingSecret::from_characters(&code).unwrap(), 1, NOW)
+        let grouped = format_character_code(&code).unwrap();
+        let b = PairingGate::new(s, PairingSecret::from_characters(&grouped).unwrap(), 1, NOW)
             .unwrap()
             .start(Role::Recipient, NOW, &mut OsRng)
             .unwrap();

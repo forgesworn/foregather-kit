@@ -38,9 +38,9 @@ crates.io availability. Install the release tarball directly when the npm
 registry version is unavailable; its runtime assets are served by your own app.
 
 ```sh
-npm install https://github.com/forgesworn/foregather-kit/releases/download/v0.3.0/forgesworn-foregather-kit-0.3.0.tgz
+npm install https://github.com/forgesworn/foregather-kit/releases/download/v0.3.1/forgesworn-foregather-kit-0.3.1.tgz
 # Build the self-hosted resolver directly from the tagged source:
-cargo install --git https://github.com/forgesworn/foregather-kit --tag v0.3.0 --locked foregather-server
+cargo install --git https://github.com/forgesworn/foregather-kit --tag v0.3.1 --locked foregather-server
 ```
 
 Private security reports use
@@ -162,6 +162,11 @@ separate secret. Choose **Words** or **Characters** and a length before creating
 an offer. Six-character secrets use a 32-symbol alphabet and provide 30 bits
 when CSPRNG-generated; four random words provide 44 bits. These are separate
 from the post-pairing verification phrase. A public room code grants no access.
+Character codes display as `DFV-SJX`, and both grouped and plain input work from
+0.3.1. Six random characters have a per-guess chance of 1 in 1,073,741,824;
+four random words have 1 in 17,592,186,044,416. The demo shows odds for the selected
+length. See [grouping and guessing assumptions](docs/character-codes.md#what-are-the-guessing-odds)
+for attempt budgets, public lookup and exact comparisons.
 
 ```js
 import { createCharacterOffer, createCharacterPairing, createRendezvousCode } from '@forgesworn/foregather-kit';

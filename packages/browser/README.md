@@ -78,10 +78,26 @@ the alphabet is `0123456789ABCDEFGHJKMNPQRSTVWXYZ`. Six uniformly generated
 characters have 30 bits, less than the default four-word offer's 44 bits.
 
 `createRendezvousCode({length:6})` generates an independent **public** lookup
-alias. `canonicalRendezvousCode(code)` normalises ASCII case and outer whitespace.
+alias. `canonicalRendezvousCode(code)` normalises ASCII case, outer whitespace
+and optional ASCII hyphens between triples.
 These helpers make no requests. Your transport owns bounded registration,
 collision checking, lookup quotas and expiry, mapping an alias to a full public
 session. Never reuse the alias as the secret or derive a secret from it.
 The [character encoding and lookup guide](https://github.com/forgesworn/foregather-kit/blob/main/docs/character-codes.md)
 explains compatibility and the loopback demo's directory. Live pairing remains
 experimental; neither a public alias nor a confirmed handoff grants room access.
+
+From 0.3.1, `formatCharacterCode('DFVSJX')` returns `DFV-SJX`. Generated values
+stay unseparated for compatibility; both presentations work for lookup and
+character pairing. Group separators add no entropy and never enter the PAKE
+password. A final short group is allowed (`ABC-DEF-GH`); malformed grouping and
+non-ASCII separators are rejected. Call `init()` before the WASM formatter.
+
+`accessSecretOdds({format:'characters',count:6,attempts:1})` can run before
+`init()`, returning `{bits:30,possibilities:1073741824n,guesses:1}`. For four words
+the sample size is `17592186044416n` (44 bits). Under uniform random generation,
+the online guessing bound is `guesses / possibilities`; count attempts across
+all endpoints reusing a secret. Human-chosen values, expiry and display hyphens
+do not establish or increase entropy. BigInt preserves exact counts; convert
+it to a string before JSON serialization. See the guide for comparison tables,
+public lookup probabilities and the experimental security assumptions.

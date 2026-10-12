@@ -1,4 +1,4 @@
-import {init,createLiveOffer,createLivePairing,createCharacterOffer,createCharacterPairing,canonicalRendezvousCode} from '/pkg/index.mjs';
+import {init,createLiveOffer,createLivePairing,createCharacterOffer,createCharacterPairing,canonicalRendezvousCode,formatCharacterCode,accessSecretOdds} from '/pkg/index.mjs';
 await init();
 const namespace='demo.live',purpose='invitation',now=()=>Math.floor(Date.now()/1000),$=id=>document.getElementById(id);
 let gate,channel,session,role,secretFormat='words',active=false,countdown;
@@ -13,6 +13,27 @@ function phase(value) {
   $('restart').hidden=value==='ready';
 }
 function status(value,state){$('status').textContent=value;if(state)phase(state);}
+function readablePossibilities(value) {
+  const units=['','thousand','million','billion','trillion','quadrillion','quintillion'];
+  const group=Math.floor((value.toString().length-1)/3);
+  if(group>=units.length)return Number(value).toExponential(2).replace('e+',' × 10^');
+  return `${(Number(value)/10**(group*3)).toLocaleString('en-GB',{maximumFractionDigits:2})} ${units[group]}`.trim();
+}
+function showStrength() {
+  const count=Number($('length').value),format=$('format').value;
+  try {
+    const odds=accessSecretOdds({format,count});
+    $('strength').textContent=`Chance per random guess: 1 in about ${readablePossibilities(odds.possibilities)} (${odds.bits} bits).`;
+    $('strength').title=`Exactly 1 in ${odds.possibilities.toLocaleString('en-GB')} for one random guess of a uniformly generated secret.`;
+  } catch {$('strength').textContent='Choose a valid length to see the guessing odds.';$('strength').removeAttribute('title');}
+}
+for(const [format,count] of [['words',2],['characters',6],['words',3],['characters',8],['words',4],['characters',12],['words',6]]) {
+  const odds=accessSecretOdds({format,count}),row=document.createElement('tr');
+  const name=document.createElement('th');name.scope='row';name.textContent=`${count} ${format}`;
+  const chance=document.createElement('td');chance.textContent=`1 in ${readablePossibilities(odds.possibilities)}`;chance.title=`1 in ${odds.possibilities.toLocaleString('en-GB')}`;
+  row.append(name,chance);$('odds-table').append(row);
+}
+showStrength();$('length').oninput=showStrength;
 function showExpiry() {
   clearInterval(countdown);
   const update=()=>{
@@ -53,10 +74,11 @@ function recipient(room) {
   session=room.session;secretFormat=room.secretFormat;role='recipient';
   history.replaceState(null,'',location.pathname);$('host').hidden=true;$('lookup').hidden=true;$('guest').hidden=false;
   document.querySelector('label[for="code"]').textContent=secretFormat==='characters'?'Secret characters':'Secret words';
-  $('code').placeholder=secretFormat==='characters'?'e.g. ABC234':'Enter the words in order';
+  $('code').placeholder=secretFormat==='characters'?'e.g. DFV-SJX':'Enter the words in order';
+  $('secret-help').textContent=secretFormat==='characters'?'With or without the hyphens. Your secret stays on this client.':'Your secret stays on this client.';
   phase('invited');$('code').focus();
 }
-$('format').onchange=()=>{const characters=$('format').value==='characters';$('length').min=characters?'6':'2';$('length').max=characters?'32':'16';$('length').value=characters?'6':'4';document.querySelector('label[for="length"]').textContent=characters?'Number of characters':'Number of words';$('format-help').textContent=characters?'6–32 characters. Compact and easy to type.':'2–16 words. Easy to read aloud.';};
+$('format').onchange=()=>{const characters=$('format').value==='characters';$('length').min=characters?'6':'2';$('length').max=characters?'32':'16';$('length').value=characters?'6':'4';document.querySelector('label[for="length"]').textContent=characters?'Number of characters':'Number of words';$('format-help').textContent=characters?'6–32 characters, grouped in threes.':'2–16 words. Easy to read aloud.';showStrength();};
 $('create-form').onsubmit=async event=>{event.preventDefault();try{
   if(!$('length').reportValidity())return;
   $('create').disabled=true;secretFormat=$('format').value;
@@ -68,8 +90,8 @@ $('create-form').onsubmit=async event=>{event.preventDefault();try{
   const roomCode=canonicalRendezvousCode(allocation.roomCode);if(roomCode.length!==6)throw Error('Invalid public code');
   const bytes=new TextEncoder().encode(JSON.stringify(room));const fragment=btoa(String.fromCharCode(...bytes)).replaceAll('+','-').replaceAll('/','_').replace(/=+$/,'');
   $('link').href=`${location.origin}/#${fragment}`;
-  $('room-code').textContent=roomCode;$('secret-label').textContent=secretFormat==='characters'?'Private secret characters':'Private secret words';
-  $('secret').textContent=secretFormat==='characters'?offer.secretCode:offer.secretWords;$('secret').dataset.format=secretFormat;$('setup').hidden=true;$('host').setAttribute('aria-labelledby','offer-title');$('offer').hidden=false;$('lookup').hidden=true;$('format').disabled=true;$('length').disabled=true;showExpiry();void connect();
+  $('room-code').textContent=formatCharacterCode(roomCode);$('secret-label').textContent=secretFormat==='characters'?'Private secret characters':'Private secret words';
+  $('secret').textContent=secretFormat==='characters'?formatCharacterCode(offer.secretCode):offer.secretWords;$('secret').dataset.format=secretFormat;$('setup').hidden=true;$('host').setAttribute('aria-labelledby','offer-title');$('offer').hidden=false;$('lookup').hidden=true;$('format').disabled=true;$('length').disabled=true;showExpiry();void connect();
 } catch{gate?.dispose();status('Could not create pairing. Start again to create a fresh pairing.','error');}};
 if(location.hash){try{
   const fragment=location.hash.slice(1);if(fragment.length>1400)throw Error();
