@@ -38,9 +38,9 @@ crates.io availability. Install the release tarball directly when the npm
 registry version is unavailable; its runtime assets are served by your own app.
 
 ```sh
-npm install https://github.com/forgesworn/foregather-kit/releases/download/v0.2.1/forgesworn-foregather-kit-0.2.1.tgz
+npm install https://github.com/forgesworn/foregather-kit/releases/download/v0.3.0/forgesworn-foregather-kit-0.3.0.tgz
 # Build the self-hosted resolver directly from the tagged source:
-cargo install --git https://github.com/forgesworn/foregather-kit --tag v0.2.1 --locked foregather-server
+cargo install --git https://github.com/forgesworn/foregather-kit --tag v0.3.0 --locked foregather-server
 ```
 
 Private security reports use
@@ -151,6 +151,30 @@ const words = channel.verificationWords({ now: currentTime() });
 // Recipient uses channel.open(), validates bytes and obtains admission consent.
 channel.dispose();
 ```
+
+The demo also gives the inviter an independent six-character **public room code**.
+The recipient can enter that code and click **Find pairing**, then enter the
+separate secret. Choose **Words** or **Characters** and a length before creating
+an offer. Six-character secrets use a 32-symbol alphabet and provide 30 bits
+when CSPRNG-generated; four random words provide 44 bits. These are separate
+from the post-pairing verification phrase. A public room code grants no access.
+
+```js
+import { createCharacterOffer, createCharacterPairing, createRendezvousCode } from '@forgesworn/foregather-kit';
+const offer = createCharacterOffer({namespace:'example.rooms', purpose:'invitation', characterCount:6, now});
+const gate = createCharacterPairing({...offer, namespace:'example.rooms', purpose:'invitation', role:'inviter', now});
+// Use the same start/finish/confirm lifecycle as the word API.
+const publicCode = createRendezvousCode({length:6});
+// Your transport maps publicCode to offer.session with bounded allocation,
+// collision checks and expiry. Never send offer.secretCode to that directory.
+gate.dispose();
+```
+
+Character APIs use the unchanged live PAKE profile through the frozen
+[base32-to-word password encoding](docs/character-codes.md). Original word APIs
+and vectors remain compatible. Character lengths are 6–32; words are 2–16.
+The public-code directory is an example-only volatile transport adapter; the
+stored resolver does not provide room lookup or grant room membership.
 
 Keep one gate for the code's entire lifetime. Cancellation and failure spend
 attempts; generate a new locator AND code after exhaustion or restart. Dispose

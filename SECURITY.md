@@ -70,6 +70,22 @@ verification phrases prove channel/shared-secret knowledge, not personal identit
 or room authority. Independent PAKE and composition review remain required
 before production adoption. Dependency scans do not replace that review.
 
+## Character secrets and public aliases
+
+The six-character access presentation added in 0.3 provides 30 bits only when
+uniformly generated from the documented 32-symbol alphabet. Default four-word
+secrets provide 44 bits. Human-chosen numeric codes or words do not inherit these
+entropy claims. Character parsing never establishes entropy. The one-use PAKE
+budget and expiry apply unchanged; see [the encoding](docs/character-codes.md).
+
+A public rendezvous/room code is an independent directory alias, not a password.
+Knowing it reveals the public session/metadata and grants no admission. Do not
+reuse it as an access secret or derive a secret from it. The transport must bound
+allocations/lookups, handle collisions and expire aliases with their session.
+The example directory is loopback-only, volatile and not a production service.
+Its quotas do not replace the endpoint password-attempt budget. Six-character
+aliases are enumerable; make no confidentiality or anonymity claim for them.
+
 ## Dependencies and portability
 
 The stored profile uses RustCrypto AES-GCM 0.10.3 with fresh 256-bit keys,

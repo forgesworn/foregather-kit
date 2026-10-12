@@ -11,6 +11,7 @@ in Rust/WASM. MIT. Copyright (c) 2026 TheCryptoDonkey. No required hosted servic
 | Stored v1 bytes, limits and compatibility | [Stored protocol](protocol.md) |
 | Self-host the ciphertext resolver | [Resolver configuration and API](resolver.md) |
 | Frozen Spoken Token v2 words | [Spoken protocol](spoken-protocol.md) |
+| Character secrets and public room lookup | [Character codes](character-codes.md) |
 | Experimental PAKE transcript and lifecycle | [Live protocol](live-protocol.md) |
 | Threat model, privacy limits, private reports | [Security](../SECURITY.md) |
 | Tested evidence and unqualified gates | [Validation](validation.md) |

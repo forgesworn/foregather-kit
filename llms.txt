@@ -15,6 +15,7 @@ Live PAKE is experimental, unaudited and not RFC 9382 wire compatible.
 - [Stored v1 protocol](https://github.com/forgesworn/foregather-kit/blob/main/docs/protocol.md)
 - [Spoken v2 protocol](https://github.com/forgesworn/foregather-kit/blob/main/docs/spoken-protocol.md)
 - [Live experimental protocol](https://github.com/forgesworn/foregather-kit/blob/main/docs/live-protocol.md)
+- [Character secrets and public lookup](https://github.com/forgesworn/foregather-kit/blob/main/docs/character-codes.md)
 - [Self-hosting resolver](https://github.com/forgesworn/foregather-kit/blob/main/docs/resolver.md)
 - [Security and privacy boundaries](https://github.com/forgesworn/foregather-kit/blob/main/SECURITY.md)
 - [Validation and remaining gates](https://github.com/forgesworn/foregather-kit/blob/main/docs/validation.md)

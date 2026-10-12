@@ -19,7 +19,7 @@ try {
   writeFileSync(join(dir,'package.json'),JSON.stringify({type:'module',private:true}));
   execFileSync('npm',['install','--ignore-scripts','--no-audit','--no-fund',join(dir,packed.filename)],{cwd:dir,stdio:'pipe'});
   const script=`import {readFileSync} from 'node:fs';
-import {init,createStoredCodec,createLiveOffer,createLivePairing,deriveSpokenWords} from '@forgesworn/foregather-kit';
+import {init,createStoredCodec,createLiveOffer,createLivePairing,deriveSpokenWords,createCharacterOffer,createCharacterPairing,createRendezvousCode,canonicalRendezvousCode} from '@forgesworn/foregather-kit';
 await init({module_or_path:readFileSync('node_modules/@forgesworn/foregather-kit/dist/foregather_wasm_bg.wasm')});
 const codec=createStoredCodec({namespace:'installed.example',baseUrl:'https://resolver.example/i/'});
 const now=1800000000,payload=new TextEncoder().encode('installed package');
@@ -35,6 +35,16 @@ if(ac.verificationWords({now})!==bc.verificationWords({now}))throw Error('Instal
 const packet=ac.seal({payload,now});
 if(new TextDecoder().decode(bc.open({packet,now}))!=='installed package')throw Error('Installed live transfer failed');
 a.dispose();b.dispose();ac.dispose();bc.dispose();
+const charOffer=createCharacterOffer({namespace:'installed.example',purpose:'bootstrap',characterCount:6,now});
+if(!/^[0-9A-HJKMNP-TV-Z]{6}$/.test(charOffer.secretCode))throw Error('Installed character generation failed');
+const ca=createCharacterPairing({...charOffer,namespace:'installed.example',purpose:'bootstrap',role:'inviter',now});
+const cb=createCharacterPairing({...charOffer,namespace:'installed.example',purpose:'bootstrap',role:'recipient',now});
+const cax=ca.start({now}),cbx=cb.start({now}),cah=cax.hello(),cbh=cbx.hello();
+const cap=cax.finish({peerHello:cbh,now}),cbp=cbx.finish({peerHello:cah,now}),caproof=cap.proof(),cbproof=cbp.proof();
+const cac=cap.confirm({peerProof:cbproof,now}),cbc=cbp.confirm({peerProof:caproof,now});
+if(new TextDecoder().decode(cbc.open({packet:cac.seal({payload,now}),now}))!=='installed package')throw Error('Installed character transfer failed');
+ca.dispose();cb.dispose();cac.dispose();cbc.dispose();
+const publicCode=createRendezvousCode();if(canonicalRendezvousCode(publicCode.toLowerCase())!==publicCode)throw Error('Installed public alias failed');
 const secret=new Uint8Array(32);secret[31]=1;
 if(deriveSpokenWords({secret,context:'test',counter:0})!=='jazz earth glacier')throw Error('Installed spoken mismatch');
 `;

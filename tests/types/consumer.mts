@@ -1,6 +1,7 @@
 import {
   init, createStoredCodec, createKithmootCodec, createResolverClient,
   createLiveOffer, createLivePairing, deriveSpokenWords, deriveDirectionalWords,
+  createCharacterOffer, createCharacterPairing, createRendezvousCode, canonicalRendezvousCode,
   type Envelope, type Allocation, type LiveSession,
 } from '@forgesworn/foregather-kit';
 
@@ -48,3 +49,13 @@ const wrongProfile: LiveSession = {...session,profile:'v1'};
 createKithmootCodec({validateInvitation: () => 'accepted'});
 // @ts-expect-error Directional derivation requires exactly two roles.
 deriveDirectionalWords({secret:payload,namespace:'example',roles:['a'],counter:0});
+
+const charOffer = createCharacterOffer({namespace:'example.rooms',purpose:'bootstrap',characterCount:6,now});
+const secretCode: string = charOffer.secretCode;
+const charGate = createCharacterPairing({...charOffer,namespace:'example.rooms',purpose:'bootstrap',role:'inviter',now});
+charGate.dispose();
+const publicCode: string = canonicalRendezvousCode(createRendezvousCode({length:6}));
+// @ts-expect-error Character access requires its own secret field.
+createCharacterPairing({...offer,namespace:'example.rooms',purpose:'bootstrap',role:'recipient',now});
+// @ts-expect-error Character offers require trusted time.
+createCharacterOffer({namespace:'example.rooms',purpose:'bootstrap'});

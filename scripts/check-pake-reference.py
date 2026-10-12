@@ -70,4 +70,12 @@ assert plaintext.decode() == v["plaintext"]
 words = (root / "crates/foregather-kit/src/en-v1.txt").read_text().splitlines()
 verification = hmac.new(derive("verification"), b"foregather-live/verify/v1" + bytes(4), hashlib.sha256).digest()
 assert " ".join(words[int.from_bytes(verification[i:i+2], "big") % 2048] for i in range(0, 6, 2)) == v["verificationWords"]
-print(json.dumps({"passed": True, "independentPythonSpake2": "0.9", "matchingHellos": True, "matchingKeysAndConfirmations": True, "bootstrapAndVerification": True}))
+encoding = json.loads((root / "crates/foregather-kit/vectors/access-base32-en-v1.json").read_text())
+assert encoding["encoding"] == "foregather-access/base32-en-v1/1"
+assert hashlib.sha256((root / "crates/foregather-kit/src/en-v1.txt").read_bytes()).hexdigest() == encoding["wordlistSha256"]
+for case in encoding["vectors"]:
+    code = case["code"]
+    bits = "".join(f"{encoding['alphabet'].index(c):05b}" for c in code)
+    indexes = [1024 + len(code)] + [int(bits[i:i+11].ljust(11, "0"), 2) for i in range(0, len(bits), 11)]
+    assert " ".join(words[i] for i in indexes) == case["canonicalWords"]
+print(json.dumps({"passed": True, "independentPythonSpake2": "0.9", "matchingHellos": True, "matchingKeysAndConfirmations": True, "bootstrapAndVerification": True, "characterEncodingVectors": True}))

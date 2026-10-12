@@ -47,7 +47,11 @@ Only CSPRNG generation supports the entropy calculation. A 2-word code offers
 22 bits; the default offers 44. Neither this public locator nor a hash of the
 secret is an authentication credential or password verifier at the relay.
 
-The public session/link and secret words travel separately. The transport must
+Since 0.3, character access codes use the separately frozen
+[base32-to-en-v1 presentation encoding](character-codes.md). The canonical
+word-password and all PAKE transcript/packet bytes remain unchanged.
+
+The public session/link and secret words or characters travel separately. The transport must
 never receive the secret in lookup IDs, URLs, body fields or logs. The example
 puts only public session JSON in its link fragment. Stronger words do not hide
 metadata, protect a compromised browser origin or authenticate a named person.
@@ -161,7 +165,11 @@ against storage/connection abuse. Do not depend on relay limits for PAKE guesses
 
 `npm run demo:live` serves a loopback Node demonstration with 64 volatile slots,
 120-second retention, six write-once message slots per session, 24-KiB bodies,
-request deadlines, same-origin writes and no request logs. It is not a production
+request deadlines, same-origin writes and no request logs. A separate bounded
+public-alias directory holds at most 64 public sessions until their original
+expiry, assigns collision-checked six-character aliases, and limits lookup to
+120 requests per fixed minute. Secret words/codes are not directory fields.
+The directory does not create rooms or admit members. It is not a production
 relay or a remotely deployed service. `foregather-server` remains a stored-mode
 resolver. The browser demo requires explicit comparison/send and only presents
 recovered input for review; it never joins a room.

@@ -1,0 +1,31 @@
+{
+  "encoding": "foregather-access/base32-en-v1/1",
+  "alphabet": "0123456789ABCDEFGHJKMNPQRSTVWXYZ",
+  "wordlistSha256": "0334930ebdfbc76e81ec914515d7567ca85738a6bf3069249d97df951d44661c",
+  "vectors": [
+    {
+      "code": "000000",
+      "canonicalWords": "jewel ability ability ability"
+    },
+    {
+      "code": "0000000",
+      "canonicalWords": "job ability ability ability ability"
+    },
+    {
+      "code": "00000000",
+      "canonicalWords": "join ability ability ability ability"
+    },
+    {
+      "code": "ABC234",
+      "canonicalWords": "jewel ether recipe fruit"
+    },
+    {
+      "code": "ZZZZZZ",
+      "canonicalWords": "jewel zoo zoo yellow"
+    },
+    {
+      "code": "0123456789ABCDEFGHJKMNPQRSTVWXYZ",
+      "canonicalWords": "kestrel about cabin kingdom load cart figure solar uniform galaxy silk pole light finger dash inhale"
+    }
+  ]
+}

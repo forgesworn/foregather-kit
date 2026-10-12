@@ -105,6 +105,62 @@ fn framed(parts: &[&[u8]]) -> Vec<u8> {
     out
 }
 
+/// Frozen access-code presentation encoding; the PAKE profile itself is unchanged.
+pub const CHARACTER_ENCODING: &str = "foregather-access/base32-en-v1/1";
+/// Exact 32-symbol alphabet. No ambiguous I, L, O or U, and no alias substitutions.
+pub const CHARACTER_ALPHABET: &str = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
+
+fn canonical_characters(value: &str) -> Result<Zeroizing<String>> {
+    if value.len() > 64 || !value.is_ascii() {
+        return Err(InvalidInvitation);
+    }
+    let value = Zeroizing::new(value.trim().to_ascii_uppercase());
+    if !(6..=32).contains(&value.len())
+        || !value
+            .bytes()
+            .all(|b| CHARACTER_ALPHABET.as_bytes().contains(&b))
+    {
+        return Err(InvalidInvitation);
+    }
+    Ok(value)
+}
+
+fn random_characters(
+    count: usize,
+    rng: &mut (impl RngCore + CryptoRng),
+) -> Result<Zeroizing<String>> {
+    if !(6..=32).contains(&count) {
+        return Err(InvalidInvitation);
+    }
+    let mut bytes = Zeroizing::new([0u8; 32]);
+    rng.try_fill_bytes(&mut bytes[..count])
+        .map_err(|_| InvalidInvitation)?;
+    let mut value = Zeroizing::new(String::with_capacity(count));
+    for &b in &bytes[..count] {
+        value.push(CHARACTER_ALPHABET.as_bytes()[usize::from(b & 31)] as char);
+    }
+    Ok(value)
+}
+
+/// Public human-readable rendezvous alias. This is never an access credential.
+/// The caller owns its expiring, collision-checked mapping to a full public session.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RendezvousCode(String);
+impl RendezvousCode {
+    /// Generate 6–32 public characters independently of the secret and full locator.
+    pub fn generate(count: usize, rng: &mut (impl RngCore + CryptoRng)) -> Result<Self> {
+        Ok(Self(random_characters(count, rng)?.to_string()))
+    }
+    /// Canonicalise ASCII case and surrounding whitespace; reject substitutions/separators.
+    pub fn parse(value: &str) -> Result<Self> {
+        Ok(Self(canonical_characters(value)?.to_string()))
+    }
+    /// Borrow the public alias. Possession grants no pairing or room authority.
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+}
+
 /// Short secret is separate from the public locator and post-pairing verification.
 /// Never persist it or put it in relay requests, query strings or logs.
 pub struct PairingSecret(Zeroizing<String>);
@@ -142,6 +198,55 @@ impl PairingSecret {
             return Err(InvalidInvitation);
         }
         Ok(Self(Zeroizing::new(words.join(" "))))
+    }
+    /// Generate 6–32 private characters and their canonical word-password encoding.
+    /// Return the code only for deliberate out-of-band presentation; six characters have 30 bits.
+    ///
+    /// ```
+    /// use foregather_kit::live::PairingSecret;
+    /// let (secret, code) = PairingSecret::generate_characters(6, &mut rand_core::OsRng)?;
+    /// assert_eq!(code.len(), 6);
+    /// let recipient_secret = PairingSecret::from_characters(&code)?;
+    /// assert_eq!(secret.expose_words(), recipient_secret.expose_words());
+    /// // Pass each secret to one lifetime PairingGate. Never log either representation.
+    /// # Ok::<(), foregather_kit::InvalidInvitation>(())
+    /// ```
+    pub fn generate_characters(
+        count: usize,
+        rng: &mut (impl RngCore + CryptoRng),
+    ) -> Result<(Self, Zeroizing<String>)> {
+        let code = random_characters(count, rng)?;
+        Ok((Self::from_characters(&code)?, code))
+    }
+    /// Encode a character secret as frozen en-v1 words without changing PAKE wire bytes.
+    /// A length-tag word prevents different-length codes with trailing zeroes from colliding.
+    /// Parsing cannot establish that a human-chosen code has CSPRNG entropy.
+    pub fn from_characters(value: &str) -> Result<Self> {
+        let code = canonical_characters(value)?;
+        let dictionary: Vec<_> = spoken::WORDS.lines().collect();
+        let mut words = Zeroizing::new(dictionary[1024 + code.len()].to_string());
+        let mut accumulator = Zeroizing::new(0u32);
+        let mut bits = 0u32;
+        for c in code.bytes() {
+            let index = CHARACTER_ALPHABET
+                .as_bytes()
+                .iter()
+                .position(|&b| b == c)
+                .ok_or(InvalidInvitation)? as u32;
+            *accumulator = (*accumulator << 5) | index;
+            bits += 5;
+            if bits >= 11 {
+                bits -= 11;
+                words.push(' ');
+                words.push_str(dictionary[((*accumulator >> bits) & 2047) as usize]);
+                *accumulator &= (1 << bits) - 1;
+            }
+        }
+        if bits > 0 {
+            words.push(' ');
+            words.push_str(dictionary[(*accumulator << (11 - bits)) as usize]);
+        }
+        Ok(Self(words))
     }
     /// Intentional secret export for human presentation only.
     pub fn expose_words(&self) -> &str {
