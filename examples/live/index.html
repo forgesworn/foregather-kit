@@ -38,6 +38,12 @@
                 <div><label for="length">Number of words</label><input id="length" type="number" required min="2" max="16" value="4"></div>
               </div>
               <p class="field-note" id="format-help">Four random words. Easy to read aloud.</p>
+              <p class="strength" id="strength" role="status"></p>
+              <details class="odds-details"><summary>Compare guessing odds</summary>
+                <div class="odds-table-wrap"><table><caption>Chance per random guess of a private secret</caption><thead><tr><th scope="col">Secret</th><th scope="col">Chance, approximately</th></tr></thead><tbody id="odds-table"></tbody></table></div>
+                <p class="field-note">These odds assume the app generates each symbol randomly. Hyphens help you read a code and add no extra randomness. Chosen or reused secrets can be easier to guess.</p>
+                <p class="field-note">One attempt per endpoint in this demo. Add up attempts against every endpoint using the same secret; two endpoints can allow two guesses in total. Expiry doesn't add randomness.</p>
+              </details>
               <button id="create" class="button primary" type="submit">Create pairing <span aria-hidden="true">↗</span></button>
             </form>
           </div>
@@ -46,7 +52,7 @@
             <div class="code-block public-code">
               <div class="code-heading"><span class="code-label">Public room code</span><button class="copy-button" id="copy-room" type="button" aria-label="Copy public room code">Copy</button></div>
               <p id="room-code" class="code-value"></p>
-              <p class="field-note">Finds this pairing. Share it or <a id="link" target="_blank" rel="noopener noreferrer">open the pairing link <span aria-hidden="true">↗</span></a>.</p>
+              <p class="field-note">Anyone with this public code can find the pairing. The separate private secret is still required. Share the code or <a id="link" target="_blank" rel="noopener noreferrer">open the pairing link <span aria-hidden="true">↗</span></a>.</p>
               <button class="text-button" id="copy-link" type="button">Copy pairing link</button>
             </div>
             <div class="code-block private-code">
@@ -61,8 +67,8 @@
           <p class="card-description">Enter the public code from the other client. You'll enter the private secret next.</p>
           <form id="find-form">
             <label for="room">Public room code</label>
-            <input id="room" class="room-input" maxlength="64" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="e.g. ABC234" required aria-describedby="room-help">
-            <p class="field-note" id="room-help">Six characters. Upper or lower case is fine.</p>
+            <input id="room" class="room-input" maxlength="64" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="e.g. DFV-SJX" required aria-describedby="room-help">
+            <p class="field-note" id="room-help">Six characters. Upper/lower case, with or without the hyphen.</p>
             <button id="find" class="button secondary" type="submit">Find pairing <span aria-hidden="true">→</span></button>
           </form>
         </section>

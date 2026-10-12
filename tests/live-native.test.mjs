@@ -4,7 +4,7 @@ import { spawn } from 'node:child_process';
 import { createInterface } from 'node:readline';
 import { readFileSync } from 'node:fs';
 import { createDecipheriv } from 'node:crypto';
-import { init, createLiveOffer, createLivePairing, createCharacterOffer, createCharacterPairing } from '../packages/browser/dist/index.mjs';
+import { init, createLiveOffer, createLivePairing, createCharacterOffer, createCharacterPairing, formatCharacterCode } from '../packages/browser/dist/index.mjs';
 await init({module_or_path:readFileSync(new URL('../packages/browser/dist/foregather_wasm_bg.wasm',import.meta.url))});
 const now=1800000000,namespace='example.rooms',purpose='bootstrap';
 for(const format of ['words','characters']) test(`native Rust peer pairs with WASM using ${format}, confirms and exchanges protected invitations`,async()=>{
@@ -14,7 +14,8 @@ for(const format of ['words','characters']) test(`native Rust peer pairs with WA
   const offer=(format==='words'?createLiveOffer:createCharacterOffer)({namespace,purpose,now});
   const gate=(format==='words'?createLivePairing:createCharacterPairing)({...offer,namespace,purpose,role:'recipient',now});let channel;
   try {
-    const native=await request({action:'start',...offer,namespace,purpose,role:'inviter'});
+    const nativeOffer=format==='characters'?{...offer,secretCode:formatCharacterCode(offer.secretCode)}:offer;
+    const native=await request({action:'start',...nativeOffer,namespace,purpose,role:'inviter'});
     const exchange=gate.start({now}),hello=exchange.hello();
     const nativePending=await request({action:'finish',peerHello:hello});
     const pending=exchange.finish({peerHello:native.hello,now}),proof=pending.proof();

@@ -115,6 +115,16 @@ fn canonical_characters(value: &str) -> Result<Zeroizing<String>> {
         return Err(InvalidInvitation);
     }
     let value = Zeroizing::new(value.trim().to_ascii_uppercase());
+    if value.contains('-') {
+        let mut groups = value.split('-').peekable();
+        while let Some(group) = groups.next() {
+            if group.is_empty() || group.len() > 3 || (groups.peek().is_some() && group.len() != 3)
+            {
+                return Err(InvalidInvitation);
+            }
+        }
+    }
+    let value = Zeroizing::new(value.replace('-', ""));
     if !(6..=32).contains(&value.len())
         || !value
             .bytes()
@@ -123,6 +133,21 @@ fn canonical_characters(value: &str) -> Result<Zeroizing<String>> {
         return Err(InvalidInvitation);
     }
     Ok(value)
+}
+
+/// Present a public or private character code in triples: `DFVSJX` becomes `DFV-SJX`.
+/// Separators add no entropy and never enter the canonical PAKE password or public locator.
+/// Private presentations must be shared deliberately and must never be logged.
+pub fn format_character_code(value: &str) -> Result<Zeroizing<String>> {
+    let value = canonical_characters(value)?;
+    let mut formatted = Zeroizing::new(String::with_capacity(value.len() + (value.len() - 1) / 3));
+    for (index, byte) in value.bytes().enumerate() {
+        if index > 0 && index % 3 == 0 {
+            formatted.push('-');
+        }
+        formatted.push(char::from(byte));
+    }
+    Ok(formatted)
 }
 
 fn random_characters(
@@ -151,7 +176,8 @@ impl RendezvousCode {
     pub fn generate(count: usize, rng: &mut (impl RngCore + CryptoRng)) -> Result<Self> {
         Ok(Self(random_characters(count, rng)?.to_string()))
     }
-    /// Canonicalise ASCII case and surrounding whitespace; reject substitutions/separators.
+    /// Canonicalise ASCII case, surrounding whitespace and optional hyphens between triples.
+    /// Reject malformed grouping, internal whitespace and ambiguous-character substitutions.
     pub fn parse(value: &str) -> Result<Self> {
         Ok(Self(canonical_characters(value)?.to_string()))
     }
@@ -221,6 +247,7 @@ impl PairingSecret {
     /// Encode a character secret as frozen en-v1 words without changing PAKE wire bytes.
     /// A length-tag word prevents different-length codes with trailing zeroes from colliding.
     /// Parsing cannot establish that a human-chosen code has CSPRNG entropy.
+    /// Accept plain characters or hyphen-separated triples, with a final group of 1–3.
     pub fn from_characters(value: &str) -> Result<Self> {
         let code = canonical_characters(value)?;
         let dictionary: Vec<_> = spoken::WORDS.lines().collect();

@@ -72,6 +72,11 @@ before production adoption. Dependency scans do not replace that review.
 
 ## Character secrets and public aliases
 
+Grouped input added in 0.3.1 strips only correctly placed ASCII hyphens between
+triples, before the existing frozen character-to-word encoding. It adds no
+entropy or extra password attempts. Generated/canonical values stay unseparated.
+See [exact guessing odds and combined endpoint budgets](docs/character-codes.md#what-are-the-guessing-odds).
+
 The six-character access presentation added in 0.3 provides 30 bits only when
 uniformly generated from the documented 32-symbol alphabet. Default four-word
 secrets provide 44 bits. Human-chosen numeric codes or words do not inherit these
