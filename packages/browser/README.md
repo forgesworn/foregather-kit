@@ -41,7 +41,30 @@ cancellation spends the default single attempt. Dispose abandoned states,
 and obtain fresh words AND a fresh locator to retry. Never send secretWords
 to a relay. The pinned SPAKE2 dependency has no independent audit and uses its
 own profile, not RFC 9382 wire bytes. This feature requires independent review
-before production adoption. See the root repository docs/live-protocol.md.
+before production adoption. See the [live protocol](https://github.com/forgesworn/foregather-kit/blob/main/docs/live-protocol.md).
 
 deriveSpokenWords and deriveDirectionalWords implement the frozen en-v1 words
 profile. Counters, identities and application replay/attempt budgets are explicit.
+
+
+```js
+import { createLiveOffer, createLivePairing } from '@forgesworn/foregather-kit';
+// After init(): the transport and complementary peer belong to your application.
+const now = Math.floor(Date.now()/1000);
+const offer = createLiveOffer({namespace:'example.rooms', purpose:'bootstrap', now});
+// Send only offer.session to a relay. Present offer.secretWords out of band.
+const gate = createLivePairing({...offer, namespace:'example.rooms', purpose:'bootstrap', role:'inviter', now});
+const exchange = gate.start({now});
+// Exchange exchange.hello() with the recipient's public hello.
+// Then exchange.finish({peerHello, now}) produces pending confirmation.
+// Exchange pending.proof(); pending.confirm({peerProof, now}) yields a channel.
+// Compare channel.verificationWords({now}) and request explicit consent.
+// Use channel.seal/open for bounded bootstrap, then dispose all surviving states.
+exchange.dispose(); // This example cancels and spends the sole attempt.
+gate.dispose();
+```
+
+The [documentation index](https://github.com/forgesworn/foregather-kit/blob/main/docs/README.md)
+links the threat model, frozen wire formats, self-hosting and validation evidence.
+The installed package is checked with a strict TypeScript consumer; it adds no
+external JavaScript runtime dependencies.

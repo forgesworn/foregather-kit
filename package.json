@@ -9,11 +9,12 @@
     "test:resolver": "node scripts/check-resolver.mjs",
     "test:demo": "node scripts/check-demo.mjs",
     "demo": "node examples/browser/serve.mjs",
-    "check": "cargo fmt --all --check && cargo clippy --workspace --all-targets --all-features -- -D warnings && cargo test --workspace --all-features && cargo build --locked -p foregather-server && cargo build --locked -p foregather-kit --example codec && cargo build --locked -p foregather-kit --features experimental-live --example live-peer && npm run build && npm test && npm run test:browser && npm run test:resolver && npm run test:demo && npm run test:live",
+    "check": "cargo fmt --all --check && cargo clippy --workspace --all-targets --all-features -- -D warnings && cargo test --locked --workspace --all-features && cargo test --locked -p foregather-kit --no-default-features && RUSTDOCFLAGS=\"-D warnings\" cargo doc --locked --workspace --all-features --no-deps && cargo build --locked -p foregather-server && cargo build --locked -p foregather-kit --example codec && cargo build --locked -p foregather-kit --features experimental-live --example live-peer && npm run build && npm test && npm run test:browser && npm run test:resolver && npm run test:demo && npm run test:live",
     "test:live": "node scripts/check-live-demo.mjs",
     "demo:live": "node examples/live/serve.mjs"
   },
   "devDependencies": {
-    "playwright": "1.62.1"
+    "playwright": "1.62.1",
+    "typescript": "5.9.3"
   }
 }

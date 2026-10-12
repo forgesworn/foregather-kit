@@ -99,10 +99,14 @@ export function createResolverClient({ apiUrl, allowLoopbackHttp = false, fetch:
     async upload({ id, uploadToken, envelope, signal }) {
       const body = typeof envelope === 'string' ? envelope : JSON.stringify(envelope);
       if (typeof body !== 'string' || body.length > MAX_BYTES || new TextEncoder().encode(body).byteLength > MAX_BYTES) invalid();
-      await request('PUT', publicId(id), body, uploadToken, signal);
+      const response = await request('PUT', publicId(id), body, uploadToken, signal);
+      await response.body?.cancel();
     },
     async fetch({ id, signal }) { return boundedText(await request('GET', publicId(id), undefined, undefined, signal)); },
-    async delete({ id, deleteToken, signal }) { await request('DELETE', publicId(id), undefined, deleteToken, signal); },
+    async delete({ id, deleteToken, signal }) {
+      const response = await request('DELETE', publicId(id), undefined, deleteToken, signal);
+      await response.body?.cancel();
+    },
   });
 }
 

@@ -1,5 +1,40 @@
 //! Experimental endpoint-to-endpoint PAKE bootstrap; see docs/live-protocol.md.
 //! This profile is NOT RFC 9382 wire compatible or independently audited.
+//!
+//! # Synthetic two-endpoint bootstrap
+//!
+//! The application transports only public session, hellos, proofs and packets.
+//! Access words travel out of band. Keep one gate per endpoint for the entire
+//! code lifetime, validate expected namespace/purpose locally and obtain consent.
+//!
+//! ```
+//! use foregather_kit::{Namespace, live::{Session, PairingSecret, PairingGate, Role}};
+//! use rand_core::OsRng;
+//! let mut rng = OsRng;
+//! let now = 1_800_000_000;
+//! let session = Session::generate(Namespace::parse("example.rooms")?, Namespace::parse("bootstrap")?, 120, now, &mut rng)?;
+//! let secret = PairingSecret::generate(4, &mut rng)?;
+//! let recipient_secret = PairingSecret::parse(secret.expose_words())?;
+//! let mut a = PairingGate::new(session.clone(), secret, 1, now)?;
+//! let mut b = PairingGate::new(session, recipient_secret, 1, now)?;
+//! let ax = a.start(Role::Inviter, now, &mut rng)?;
+//! let bx = b.start(Role::Recipient, now, &mut rng)?;
+//! let ah = ax.hello();
+//! let bh = bx.hello();
+//! let ap = ax.finish(&bh, now)?;
+//! let bp = bx.finish(&ah, now)?;
+//! let aproof = ap.confirmation()?;
+//! let bproof = bp.confirmation()?;
+//! let mut ac = ap.confirm(&bproof, now)?;
+//! let mut bc = bp.confirm(&aproof, now)?;
+//! assert_eq!(ac.verification_words(3, now)?, bc.verification_words(3, now)?);
+//! // Both people compare the words and consent before handing over app input.
+//! let packet = ac.seal(b"candidate invitation", now)?;
+//! let candidate = bc.open(&packet, now)?;
+//! assert_eq!(candidate.as_slice(), b"candidate invitation");
+//! // The receiving application still validates and admits the candidate.
+//! # Ok::<(), foregather_kit::InvalidInvitation>(())
+//! ```
 use crate::{
     InvalidInvitation, Locator, MAX_SAFE_SECONDS, Namespace, Result, array, decode, encode, spoken,
 };
@@ -16,8 +51,11 @@ use sha2::{Digest, Sha256};
 use spake2::{Ed25519Group, Identity, Password, Spake2};
 use zeroize::Zeroizing;
 
+/// Exact transcript and packet profile identifier; not RFC 9382 wire bytes.
 pub const PROFILE: &str = "foregather-live/spake2-ed25519/1";
+/// Maximum accepted serialized bootstrap packet size.
 pub const MAX_PACKET_BYTES: usize = 24 * 1024;
+/// Maximum plaintext bootstrap payload size.
 pub const MAX_PAYLOAD_BYTES: usize = 16 * 1024;
 const MAX_MESSAGES: u64 = 65_536;
 
@@ -76,6 +114,7 @@ impl std::fmt::Debug for PairingSecret {
     }
 }
 impl PairingSecret {
+    /// Generate 2–16 secret words with trusted entropy; four words provide 44 bits.
     pub fn generate(count: usize, rng: &mut (impl RngCore + CryptoRng)) -> Result<Self> {
         if !(2..=16).contains(&count) {
             return Err(InvalidInvitation);
@@ -88,7 +127,7 @@ impl PairingSecret {
             count,
         )?)))
     }
-    /// ASCII whitespace and case are normalised; every word must be in frozen en-v1.
+    /// Parse access words; ASCII whitespace/case are normalised and every word must be in en-v1.
     pub fn parse(value: &str) -> Result<Self> {
         if value.len() > 256 || !value.is_ascii() {
             return Err(InvalidInvitation);
@@ -110,17 +149,25 @@ impl PairingSecret {
     }
 }
 
+/// Public rendezvous context. Locally validate expected namespace and purpose before pairing.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Session {
+    /// Exact experimental wire profile.
     pub profile: String,
+    /// Application-selected domain separation, not proof of application identity.
     pub namespace: String,
+    /// Application-selected bootstrap purpose.
     pub purpose: String,
+    /// Independent 128-bit public lookup address, never an authentication secret.
     pub locator: String,
+    /// Issuance time in trusted Unix seconds.
     pub issued: u64,
+    /// Expiry in Unix seconds, at most 600 seconds after issuance.
     pub expires: u64,
 }
 impl Session {
+    /// Generate a public session with independent locator and lifetime of 1–600 seconds.
     pub fn generate(
         namespace: Namespace,
         purpose: Namespace,
@@ -139,6 +186,7 @@ impl Session {
         session.check(now)?;
         Ok(session)
     }
+    /// Parse bounded public JSON and validate its profile, domains and lifetime.
     pub fn parse(value: &str, now: u64) -> Result<Self> {
         if value.len() > 1024 {
             return Err(InvalidInvitation);
@@ -174,9 +222,12 @@ impl Session {
     }
 }
 
+/// Fixed complementary PAKE role, chosen locally by the application.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Role {
+    /// Party presenting the invitation and access words.
     Inviter,
+    /// Party entering the access words.
     Recipient,
 }
 impl Role {
@@ -204,6 +255,7 @@ pub struct PairingGate {
     last_now: u64,
 }
 impl PairingGate {
+    /// Create the single lifetime gate with 1–5 attempts; prefer one attempt.
     pub fn new(session: Session, secret: PairingSecret, attempts: u8, now: u64) -> Result<Self> {
         session.check(now)?;
         if !(1..=5).contains(&attempts) {
@@ -216,9 +268,11 @@ impl PairingGate {
             last_now: now,
         })
     }
+    /// Return the unspent start budget.
     pub fn remaining(&self) -> u8 {
         self.remaining
     }
+    /// Spend an attempt and create a fresh exchange with trusted entropy and time.
     pub fn start(
         &mut self,
         role: Role,
@@ -266,9 +320,11 @@ pub struct Exchange {
     last_now: u64,
 }
 impl Exchange {
+    /// Export the public PAKE hello for transport to the complementary peer.
     pub fn hello(&self) -> String {
         encode(&self.hello)
     }
+    /// Consume this exchange, validate the peer point and derive pending confirmation.
     pub fn finish(self, peer_hello: &str, now: u64) -> Result<PendingConfirmation> {
         self.session.check(now)?;
         if now < self.last_now || peer_hello.len() != 44 {
@@ -332,6 +388,7 @@ fn proof(key: &[u8], transcript: &[u8], role: Role) -> Result<[u8; 32]> {
     Ok(mac.finalize().into_bytes().into())
 }
 
+/// One-use proof exchange; no application channel exists before peer confirmation.
 pub struct PendingConfirmation {
     session: Session,
     role: Role,
@@ -344,6 +401,7 @@ pub struct PendingConfirmation {
     last_now: u64,
 }
 impl PendingConfirmation {
+    /// Export the role-bound confirmation proof, never raw channel keys.
     pub fn confirmation(&self) -> Result<String> {
         Ok(encode(&proof(
             self.confirm_send.as_ref(),
@@ -418,6 +476,7 @@ impl Channel {
             &seq.to_be_bytes(),
         ])
     }
+    /// Derive 1–16 post-pairing comparison words, distinct from the access secret.
     pub fn verification_words(&self, count: usize, now: u64) -> Result<String> {
         self.check(now)?;
         spoken::derive_words(
@@ -428,6 +487,7 @@ impl Channel {
             count,
         )
     }
+    /// Encrypt the next ordered payload; spend its sequence number before encryption.
     pub fn seal(&mut self, payload: &[u8], now: u64) -> Result<String> {
         self.check(now)?;
         if payload.len() > MAX_PAYLOAD_BYTES || self.sent >= MAX_MESSAGES {
@@ -456,6 +516,7 @@ impl Channel {
         })
         .map_err(|_| InvalidInvitation)
     }
+    /// Authenticate the next peer packet; reject tampering, reordering and replay.
     pub fn open(&mut self, packet: &str, now: u64) -> Result<Zeroizing<Vec<u8>>> {
         self.check(now)?;
         if packet.len() > MAX_PACKET_BYTES || self.received >= MAX_MESSAGES {

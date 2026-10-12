@@ -5,6 +5,7 @@ use hmac::{Hmac, Mac};
 use sha2::Sha256;
 use zeroize::Zeroizing;
 
+/// SHA-256 of the frozen 2,048-entry en-v1 word list.
 pub const WORDLIST_SHA256: &str =
     "0334930ebdfbc76e81ec914515d7567ca85738a6bf3069249d97df951d44661c";
 pub(crate) const WORDS: &str = include_str!("en-v1.txt");
@@ -52,6 +53,7 @@ pub fn encode_words(bytes: &[u8], count: usize) -> Result<String> {
         .join(" "))
 }
 
+/// Derive and encode 1–16 verification words; callers own replay and attempt policy.
 pub fn derive_words(
     secret: &[u8],
     context: &str,
