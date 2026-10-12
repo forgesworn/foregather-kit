@@ -1,12 +1,18 @@
 import {execFileSync} from 'node:child_process';
-import {mkdtempSync,rmSync,readFileSync,writeFileSync} from 'node:fs';
+import {mkdtempSync,rmSync,readFileSync,writeFileSync,copyFileSync,statSync} from 'node:fs';
 import {tmpdir} from 'node:os';
-import {join} from 'node:path';
+import {join,resolve,basename} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import assert from 'node:assert/strict';
 const root=fileURLToPath(new URL('../',import.meta.url)),dir=mkdtempSync(join(tmpdir(),'foregather-package-'));
 try {
-  const packed=JSON.parse(execFileSync('npm',['pack','./packages/browser','--json','--pack-destination',dir],{cwd:root,encoding:'utf8'}))[0];
+  let packed;
+  if(process.argv[2]) {
+    const archive=resolve(process.argv[2]),filename=basename(archive);
+    const files=execFileSync('tar',['-tzf',archive],{encoding:'utf8'}).trim().split('\n').map(name=>({path:name.replace(/^package\//,'')}));
+    if(files.some(f=>f.path.startsWith('/')||f.path.split('/').includes('..')))throw Error('Invalid package path');
+    copyFileSync(archive,join(dir,filename));packed={filename,files,size:statSync(archive).size};
+  } else packed=JSON.parse(execFileSync('npm',['pack','./packages/browser','--json','--pack-destination',dir],{cwd:root,encoding:'utf8'}))[0];
   assert.ok(packed.files.some(f=>f.path==='dist/foregather_wasm_bg.wasm'));
   assert.ok(packed.files.some(f=>f.path==='dist/index.d.ts'));
   assert.ok(packed.files.some(f=>f.path==='THIRD_PARTY_LICENSES.txt'));

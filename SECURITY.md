@@ -87,7 +87,6 @@ establish that Foregather's composition has been independently audited.
 ## Reporting
 
 Do not put live keys, invitation URLs, management capabilities or private-room
-contents in public issues. Coordinate sensitive reports privately with the
-project maintainer, TheCryptoDonkey. Public vulnerability reports should use
-synthetic reproductions. A dedicated private reporting endpoint is a publication
-gate and has not been provisioned by this local build.
+contents in public issues. Use [GitHub private vulnerability reporting](https://github.com/forgesworn/foregather-kit/security/advisories/new)
+to coordinate sensitive reports with the project maintainer, TheCryptoDonkey. Public vulnerability reports should use
+synthetic reproductions. Private vulnerability reporting is enabled on the public repository.

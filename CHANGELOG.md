@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.2.0 - 2026-10-12 (local, unpublished)
+## 0.2.0 - 2026-10-12 (experimental release)
 
 * Add opt-in experimental endpoint PAKE with separate locator/secret, bound
   context and roles, one-use confirmation and a cancellation-safe attempt budget.

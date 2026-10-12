@@ -8,6 +8,8 @@ edition = "2024"
 rust-version = "1.94"
 license = "MIT"
 authors = ["TheCryptoDonkey"]
+repository = "https://github.com/forgesworn/foregather-kit"
+homepage = "https://github.com/forgesworn/foregather-kit"
 
 [workspace.dependencies]
 foregather-kit = { path = "crates/foregather-kit", version = "0.2.0" }

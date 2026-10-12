@@ -1,11 +1,15 @@
 [package]
 name = "foregather-kit"
-description = "Portable, transport-independent encrypted invitation envelopes"
+description = "Portable encrypted invitation transfer, spoken verification and opt-in experimental live pairing"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
 authors.workspace = true
+repository.workspace = true
+homepage.workspace = true
+documentation = "https://docs.rs/foregather-kit"
+keywords = ["invitations", "pairing", "privacy", "wasm", "spake2"]
 readme = "../../README.md"
 
 [dependencies]

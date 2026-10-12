@@ -37,9 +37,12 @@ experimental-live feature disabled and do not compile its curve/PAKE dependencie
 
 ## Remaining gates
 
-Hosted CI is defined but has not run. This local repository has not been
-published to GitHub, npm or crates.io. No production resolver/domain/live relay
-was deployed. Joystick, Covey and KithMoot have not been migrated; application
+This record describes the local validation run. Current hosted CI evidence is
+on [GitHub Actions](https://github.com/forgesworn/foregather-kit/actions); public
+distribution status and asset checksums are on the
+[release page](https://github.com/forgesworn/foregather-kit/releases). Registry
+publication is a separate gate from tarball/package compilation. No production
+resolver/domain/live relay has been deployed. Joystick, Covey and KithMoot have not been migrated; application
 admission, host/controller authority and continuing traffic encryption remain
 owned by their existing protocols.
 

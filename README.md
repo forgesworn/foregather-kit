@@ -26,6 +26,26 @@ Opening an envelope returns application input for review. It does not establish
 identity, validate a room authority, create membership, enrol a device or rekey a
 room. Fold, Covey and other application protocols retain those responsibilities.
 
+## Distribution
+
+Source and tagged experimental releases live at
+[forgesworn/foregather-kit](https://github.com/forgesworn/foregather-kit).
+[Release assets](https://github.com/forgesworn/foregather-kit/releases) include a
+browser tarball, native Rust crate, Linux resolver binary, licence texts,
+SHA-256 checksums and build provenance. Assets ship after hosted verification.
+Registry publication is a separate gate; consult the release notes for npm and
+crates.io availability. Install the release tarball directly when the npm
+registry version is unavailable; its runtime assets are served by your own app.
+
+```sh
+npm install https://github.com/forgesworn/foregather-kit/releases/download/v0.2.0/forgesworn-foregather-kit-0.2.0.tgz
+# Build the self-hosted resolver directly from the tagged source:
+cargo install --git https://github.com/forgesworn/foregather-kit --tag v0.2.0 --locked foregather-server
+```
+
+Private security reports use
+[GitHub private vulnerability reporting](https://github.com/forgesworn/foregather-kit/security/advisories/new).
+
 ## Build and verify
 
 Requirements: Rust 1.94.1, Node 24, Python 3, `wasm32-unknown-unknown`, and
