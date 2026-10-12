@@ -9,7 +9,7 @@ All invitation and management material used by these checks is synthetic.
 | Rust format and lint | `cargo fmt --all --check`; Clippy with warnings denied, all workspace targets |
 | Native core | 12 passing tests: independent vectors, namespace/profile substitution, tampering, expiry, canonical input, limits, entropy failure; 4,096 deterministic hostile mutations |
 | Resolver | 8 passing tests: restart, durable quotas, expiry, independent management authority, write-once races, bounded HTTP, stored-capability hashes, cancellation retains database work budget |
-| Node/WASM | 15 passing tests: native/WASM/independent Node AES interoperability, KithMoot vectors, streaming limits, cancellation, safe endpoints, caller validation |
+| Node/WASM | 16 passing tests: native/WASM/independent Node AES interoperability, KithMoot vectors, streaming/allocation limits, cancellation, safe endpoints, caller validation |
 | Real Chromium codec | Independent KithMoot vectors opened, generated ciphertext authenticated by Node, tampering rejected; zero external requests |
 | Real resolver process | Native inviter to WASM recipient; ciphertext survives process restart; wrong deletion authority refused; deletion observed; creation budget survives restart |
 | Two browser clients | Create/share/review/delete through the local example; no invitation fetch before explicit review; no external requests; outside-origin creation rejected |
@@ -21,7 +21,7 @@ All invitation and management material used by these checks is synthetic.
 The generated WASM is 459,910 bytes, or 176,367 bytes gzipped. A local Chromium
 run measured 14.7 ms for WASM initialization; this is a single-machine diagnostic,
 not a supported-device performance or memory budget. The browser package tarball
-including licences was 204,658 bytes during its isolated install check.
+including licences was about 200 KiB during its isolated install check.
 
 ## Remaining gates
 

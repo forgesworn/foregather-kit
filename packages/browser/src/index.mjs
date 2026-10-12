@@ -3,6 +3,7 @@ import initWasm, { seal_envelope, open_envelope, invitation_locator } from './fo
 const MAX_BYTES = 32768;
 const invalid = () => { throw new Error('Invalid invitation'); };
 export async function init(options) { await initWasm(options); }
+function boundedUrl(value) { if (typeof value !== 'string' || value.length > MAX_BYTES) invalid(); return value; }
 
 function codec(profile, baseUrl, allowLoopbackHttp) {
   if (typeof baseUrl !== 'string' || typeof allowLoopbackHttp !== 'boolean') invalid();
@@ -12,10 +13,10 @@ function codec(profile, baseUrl, allowLoopbackHttp) {
       return JSON.parse(seal_envelope(profile, baseUrl, allowLoopbackHttp, id, payload, expires, now));
     },
     open({ url, envelope, now }) {
-      if (typeof envelope !== 'string' || new TextEncoder().encode(envelope).byteLength > MAX_BYTES) invalid();
-      return open_envelope(profile, baseUrl, allowLoopbackHttp, url, envelope, now);
+      if (typeof envelope !== 'string' || envelope.length > MAX_BYTES || new TextEncoder().encode(envelope).byteLength > MAX_BYTES) invalid();
+      return open_envelope(profile, baseUrl, allowLoopbackHttp, boundedUrl(url), envelope, now);
     },
-    locator(url) { return invitation_locator(baseUrl, allowLoopbackHttp, url); },
+    locator(url) { return invitation_locator(baseUrl, allowLoopbackHttp, boundedUrl(url)); },
   });
 }
 
@@ -97,7 +98,7 @@ export function createResolverClient({ apiUrl, allowLoopbackHttp = false, fetch:
     },
     async upload({ id, uploadToken, envelope, signal }) {
       const body = typeof envelope === 'string' ? envelope : JSON.stringify(envelope);
-      if (typeof body !== 'string' || new TextEncoder().encode(body).byteLength > MAX_BYTES) invalid();
+      if (typeof body !== 'string' || body.length > MAX_BYTES || new TextEncoder().encode(body).byteLength > MAX_BYTES) invalid();
       await request('PUT', publicId(id), body, uploadToken, signal);
     },
     async fetch({ id, signal }) { return boundedText(await request('GET', publicId(id), undefined, undefined, signal)); },

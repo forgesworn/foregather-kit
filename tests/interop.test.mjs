@@ -103,3 +103,13 @@ test('KithMoot requires caller validation before sealing and after recovery',() 
   assert.throws(()=>refuse.seal({id,invitation:vector.fullInvitation,expires,now}));
   assert.throws(()=>refuse.open({url:vector.url,envelope:JSON.stringify(vector.envelope),now}));
 });
+
+test('oversized JS input is refused before UTF-8 allocation or WASM transfer',()=>{
+  const Original=globalThis.TextEncoder;let encoded=false;
+  globalThis.TextEncoder=class {encode(){encoded=true;throw Error('Should not encode oversized input');}};
+  try {
+    assert.throws(()=>generic.open({url:'https://resolver.example/i/',envelope:'x'.repeat(32769),now}));
+    assert.equal(encoded,false);
+    assert.throws(()=>generic.locator('x'.repeat(32769)));
+  } finally {globalThis.TextEncoder=Original;}
+});
