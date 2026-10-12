@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.2.0 - 2026-10-12 (experimental release)
+
+* Add opt-in experimental endpoint PAKE with separate locator/secret, bound
+  context and roles, one-use confirmation and a cancellation-safe attempt budget.
+* Add ordered, direction-specific encrypted bootstrap packets and verification words.
+* Add frozen Spoken Token v2 en-v1 word and directional compatibility.
+* Add bounded WASM APIs, native/browser interoperability, frozen vectors and a
+  two-client local handoff demonstration. Preserve stored v1 formats.
+* Document the unaudited dependency, memory limitations and production review gate.
+
 ## 0.1.0 - 2026-10-12
 
 * Add a Rust stored-invitation envelope core with authenticated application

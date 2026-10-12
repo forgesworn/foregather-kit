@@ -1,0 +1,27 @@
+{
+  "helloA": "QYmXRSSBQyF5LvqQhz0NFc-N3-e_UBikF32cFzEEiLqy",
+  "helloB": "QljM1GuHAojGhO1l8woHc7ZEm9TnatdJcoeu3iRSsPMG",
+  "packet": {
+    "ciphertext": "5Nm67qLGh0cJrqc2Az-h4fLxQPJPz-jUKWLfcF6zipRNaeY",
+    "seq": 0,
+    "v": "foregather-live/spake2-ed25519/1"
+  },
+  "plaintext": "synthetic bootstrap",
+  "proofA": "3EttABwiXyKTrCtkCmJbjbRNT4Zvy7mJQq469qaHZdo",
+  "proofB": "dLq4j1aKmLrlhMB4mrFl34DZZD2AAAywh-NKzxgBZ9k",
+  "rngAStart": 1,
+  "rngBStart": 65,
+  "secretWords": "jazz earth glacier",
+  "sendKeyA": "xVIY7m5UY5nzQ07tAO088F26tbEaDvSLpXVgb2BO69Y",
+  "sendKeyB": "M0814iNwEEsvRKvALlVYSAR0QmgLTOmLpL67sV4lL3c",
+  "session": {
+    "expires": 1800000120,
+    "issued": 1800000000,
+    "locator": "BwcHBwcHBwcHBwcHBwcHBw",
+    "namespace": "example.rooms",
+    "profile": "foregather-live/spake2-ed25519/1",
+    "purpose": "bootstrap"
+  },
+  "transcript": "MlXo88NMfiPKYQSAHqihD_l2Pj1lW8R9-ZFX5-OZyAk",
+  "verificationWords": "cigar liquid excite"
+}

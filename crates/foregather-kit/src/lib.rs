@@ -2,6 +2,10 @@
 //! No network, wall clock, identity lookup or room admission lives here.
 #![forbid(unsafe_code)]
 
+#[cfg(feature = "experimental-live")]
+pub mod live;
+pub mod spoken;
+
 use aes_gcm::{
     Aes256Gcm, KeyInit, Nonce,
     aead::{Aead, Payload},

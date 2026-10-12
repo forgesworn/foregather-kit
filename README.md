@@ -7,22 +7,44 @@ with a WASM browser package and an optional self-hosted ciphertext resolver.
 It works without a ForgeSworn account, hosted endpoint or third-party product.
 Applications choose their infrastructure and retain control of admission.
 
-Version 0.1 implements **stored invitation transfer**. Its public API is early;
-the v1 formats have frozen independent vectors. Live short-code PAKE pairing,
-spoken verification, Swift/Kotlin bindings and application migrations are
-subsequent work. This version has not received an independent security review.
+Version 0.2 implements **stored invitation transfer**, **Spoken Token v2 word
+compatibility** and **experimental live PAKE bootstrap**. Stored v1 bytes remain
+unchanged. Live pairing is an explicit Rust feature (`experimental-live`), uses
+a pinned, unaudited SPAKE2 implementation and needs independent review before
+production adoption. Swift/Kotlin bindings and app migrations remain subsequent
+work. This project has not received an independent security review.
 
 ## Packages
 
 | Package | Responsibility |
 | --- | --- |
-| `foregather-kit` | Pure Rust envelope operations, explicit clock and CSPRNG, typed public locator and secret invitation |
+| `foregather-kit` | Pure Rust envelope, spoken and optional live operations, explicit clock and CSPRNG, typed public locator and secret invitation |
 | `@forgesworn/foregather-kit` | WASM implementation, TypeScript declarations, optional explicit HTTP client |
 | `foregather-server` | Bounded SQLite ciphertext storage, upload/delete capabilities and durable creation budget |
 
 Opening an envelope returns application input for review. It does not establish
 identity, validate a room authority, create membership, enrol a device or rekey a
 room. Fold, Covey and other application protocols retain those responsibilities.
+
+## Distribution
+
+Source and tagged experimental releases live at
+[forgesworn/foregather-kit](https://github.com/forgesworn/foregather-kit).
+[Release assets](https://github.com/forgesworn/foregather-kit/releases) include a
+browser tarball, native Rust crate, Linux resolver binary, licence texts,
+SHA-256 checksums and build provenance. Assets ship after hosted verification.
+Registry publication is a separate gate; consult the release notes for npm and
+crates.io availability. Install the release tarball directly when the npm
+registry version is unavailable; its runtime assets are served by your own app.
+
+```sh
+npm install https://github.com/forgesworn/foregather-kit/releases/download/v0.2.0/forgesworn-foregather-kit-0.2.0.tgz
+# Build the self-hosted resolver directly from the tagged source:
+cargo install --git https://github.com/forgesworn/foregather-kit --tag v0.2.0 --locked foregather-server
+```
+
+Private security reports use
+[GitHub private vulnerability reporting](https://github.com/forgesworn/foregather-kit/security/advisories/new).
 
 ## Build and verify
 
@@ -96,6 +118,49 @@ creation or per-user creation delegation needs an application-owned policy.
 For Node, pass WASM bytes to `init({ module_or_path: bytes })`; browser default
 initialisation loads the WASM asset beside the generated module. Serving those
 assets requires `application/wasm` for the WASM file.
+
+## Live pairing and spoken words
+
+Run `npm run demo:live`, open `http://127.0.0.1:8789`, create a pairing, then open
+its public link in another browser context. Speak the secret words separately.
+After both clients pair, compare their verification words and explicitly send
+an invitation for application review. `npm run test:live` automates success,
+wrong-code rejection, private relay contents and explicit handoff. The demo is
+loopback-only; it is not a production relay.
+
+```js
+import { createLiveOffer, createLivePairing } from '@forgesworn/foregather-kit';
+const currentTime = () => Math.floor(Date.now() / 1000);
+const now = currentTime();
+const offer = createLiveOffer({ namespace: 'example.rooms', purpose: 'invitation', now });
+// Share offer.session publicly; speak offer.secretWords separately.
+const gate = createLivePairing({ ...offer, namespace: 'example.rooms',
+  purpose: 'invitation', role: 'inviter', now });
+const exchange = gate.start({ now }); // Spends the default single attempt.
+const hello = exchange.hello(); // Pass through your own transport.
+const pending = exchange.finish({ peerHello, now: currentTime() });
+const proof = pending.proof(); // Exchange with the other endpoint.
+const channel = pending.confirm({ peerProof, now: currentTime() });
+gate.dispose();
+const words = channel.verificationWords({ now: currentTime() });
+// Compare words. Encrypt invitation bytes with channel.seal(), then transfer.
+// Recipient uses channel.open(), validates bytes and obtains admission consent.
+channel.dispose();
+```
+
+Keep one gate for the code's entire lifetime. Cancellation and failure spend
+attempts; generate a new locator AND code after exhaustion or restart. Dispose
+all abandoned states. Locally select the expected namespace and purpose on both
+endpoints. The library initiates no network activity. Defaults are four access
+words (44 bits when randomly generated), a 120-second lifetime, one attempt and
+three verification words. Counts/lifetime are configurable within documented
+bounds; none is limited to six letters or six words.
+
+Use `deriveSpokenWords({secret, context, counter, identity?, count?})` and
+`deriveDirectionalWords({secret, namespace, roles, counter, count?})` for exact
+Spoken Token v2 words. These verify shared-secret knowledge; applications own
+replay and attempt policy. See [live protocol](docs/live-protocol.md) and
+[spoken compatibility](docs/spoken-protocol.md).
 
 ## Rust use
 

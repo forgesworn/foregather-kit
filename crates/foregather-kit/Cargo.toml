@@ -1,14 +1,23 @@
 [package]
 name = "foregather-kit"
-description = "Portable, transport-independent encrypted invitation envelopes"
+description = "Portable encrypted invitation transfer, spoken verification and opt-in experimental live pairing"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
 authors.workspace = true
+repository.workspace = true
+homepage.workspace = true
+documentation = "https://docs.rs/foregather-kit"
+keywords = ["invitations", "pairing", "privacy", "wasm", "spake2"]
 readme = "../../README.md"
 
 [dependencies]
+sha2.workspace = true
+hmac = "0.12"
+hkdf = { version = "0.12", optional = true }
+spake2 = { version = "=0.4.0", default-features = false, optional = true }
+curve25519-dalek = { version = "4", optional = true }
 aes-gcm = { version = "0.10.3", features = ["zeroize"] }
 base64.workspace = true
 serde.workspace = true
@@ -16,3 +25,6 @@ serde_json.workspace = true
 rand_core.workspace = true
 zeroize.workspace = true
 url = "2.5"
+
+[features]
+experimental-live = ["dep:hkdf", "dep:spake2", "dep:curve25519-dalek"]

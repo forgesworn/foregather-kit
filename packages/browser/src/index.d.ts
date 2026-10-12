@@ -19,3 +19,20 @@ export function createResolverClient(config: { apiUrl: string; allowLoopbackHttp
   fetch(input: { id: string; signal?: AbortSignal }): Promise<string>;
   delete(input: { id: string; deleteToken: string; signal?: AbortSignal }): Promise<void>;
 }>;
+
+/** Experimental profile, not RFC 9382 wire compatible or independently audited. */
+export interface LiveSession { profile: 'foregather-live/spake2-ed25519/1'; namespace: string; purpose: string; locator: string; issued: number; expires: number }
+export interface LiveOffer { readonly session: Readonly<LiveSession>; readonly secretWords: string }
+export interface LiveChannel {
+  verificationWords(input: { count?: number; now: number }): string;
+  seal(input: { payload: Uint8Array; now: number }): string;
+  open(input: { packet: string; now: number }): Uint8Array;
+  dispose(): void;
+}
+export interface LiveConfirmation { proof(): string; confirm(input: { peerProof: string; now: number }): LiveChannel; dispose(): void }
+export interface LiveExchange { hello(): string; finish(input: { peerHello: string; now: number }): LiveConfirmation; dispose(): void }
+export interface LivePairing { remaining(): number; start(input: { now: number }): LiveExchange; dispose(): void }
+export function createLiveOffer(input: { namespace: string; purpose: string; wordCount?: number; lifetime?: number; now: number }): LiveOffer;
+export function createLivePairing(input: { session: LiveSession; secretWords: string; namespace: string; purpose: string; role: 'inviter' | 'recipient'; attempts?: number; now: number }): LivePairing;
+export function deriveSpokenWords(input: { secret: Uint8Array; context: string; counter: number; identity?: string; count?: number }): string;
+export function deriveDirectionalWords(input: { secret: Uint8Array; namespace: string; roles: [string, string]; counter: number; count?: number }): [string, string];
