@@ -37,8 +37,9 @@ def bundle(packages):
         sections.append(f"\n{'=' * 72}\n{p['name']} {p['version']}\nSPDX: {p['license']}\n"
                         f"Source: https://crates.io/crates/{p['name']}/{p['version']}\n")
         for file in files:
-            sections.append(f"\n--- {file.name} ---\n{file.read_text()}\n")
-    return "".join(sections)
+            text = "\n".join(line.rstrip() for line in file.read_text().splitlines())
+            sections.append(f"\n--- {file.name} ---\n{text}\n")
+    return "".join(sections).rstrip() + "\n"
 
 
 browser = graph("wasm32-unknown-unknown", {"foregather-wasm"})

@@ -25,4 +25,3 @@ debug = 1
 [profile.release]
 lto = "thin"
 strip = "debuginfo"
-
