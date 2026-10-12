@@ -215,4 +215,138 @@ fn entropy_failure_spends_an_attempt_without_panicking_or_producing_a_hello() {
     assert!(g.start(Role::Inviter, NOW, &mut FailedEntropy).is_err());
     assert_eq!(g.remaining(), 0);
     assert!(PairingSecret::generate(4, &mut FailedEntropy).is_err());
+    assert!(PairingSecret::generate_characters(6, &mut FailedEntropy).is_err());
+    assert!(RendezvousCode::generate(6, &mut FailedEntropy).is_err());
+}
+
+#[test]
+fn character_encoding_is_frozen_canonical_length_bound_and_redacted() {
+    let v: serde_json::Value =
+        serde_json::from_str(include_str!("../vectors/access-base32-en-v1.json")).unwrap();
+    assert_eq!(v["encoding"], CHARACTER_ENCODING);
+    assert_eq!(v["alphabet"], CHARACTER_ALPHABET);
+    assert_eq!(v["wordlistSha256"], foregather_kit::spoken::WORDLIST_SHA256);
+    for case in v["vectors"].as_array().unwrap() {
+        let code = case["code"].as_str().unwrap();
+        let secret = PairingSecret::from_characters(code).unwrap();
+        assert_eq!(
+            secret.expose_words(),
+            case["canonicalWords"].as_str().unwrap()
+        );
+        assert_eq!(
+            PairingSecret::from_characters(&format!(" {} ", code.to_ascii_lowercase()))
+                .unwrap()
+                .expose_words(),
+            secret.expose_words()
+        );
+        assert!(!format!("{secret:?}").contains(code));
+        assert!(!format!("{secret:?}").contains(secret.expose_words()));
+    }
+    for code in [
+        "ABCDE", "ABC234I", "ABC234O", "ABC234L", "ABC234U", "ABC-234", "ABC 234", "ABC23é",
+    ] {
+        assert!(PairingSecret::from_characters(code).is_err());
+        assert!(RendezvousCode::parse(code).is_err());
+    }
+    assert!(PairingSecret::from_characters(&"A".repeat(33)).is_err());
+    assert_ne!(
+        PairingSecret::from_characters("000000")
+            .unwrap()
+            .expose_words(),
+        PairingSecret::from_characters("0000000")
+            .unwrap()
+            .expose_words()
+    );
+}
+
+#[test]
+fn character_secrets_pair_with_their_canonical_word_password_without_wire_changes() {
+    for length in [6, 7, 8, 12, 32] {
+        let (secret, code) = PairingSecret::generate_characters(length, &mut OsRng).unwrap();
+        assert_eq!(code.len(), length);
+        assert!(
+            code.bytes()
+                .all(|b| CHARACTER_ALPHABET.as_bytes().contains(&b))
+        );
+        let s = session();
+        let a = PairingGate::new(s.clone(), secret, 1, NOW)
+            .unwrap()
+            .start(Role::Inviter, NOW, &mut OsRng)
+            .unwrap();
+        let b = PairingGate::new(s, PairingSecret::from_characters(&code).unwrap(), 1, NOW)
+            .unwrap()
+            .start(Role::Recipient, NOW, &mut OsRng)
+            .unwrap();
+        let ah = a.hello();
+        let bh = b.hello();
+        let ap = a.finish(&bh, NOW).unwrap();
+        let bp = b.finish(&ah, NOW).unwrap();
+        let proof_a = ap.confirmation().unwrap();
+        let proof_b = bp.confirmation().unwrap();
+        let mut ac = ap.confirm(&proof_b, NOW).unwrap();
+        let mut bc = bp.confirm(&proof_a, NOW).unwrap();
+        assert_eq!(
+            ac.verification_words(3, NOW).unwrap(),
+            bc.verification_words(3, NOW).unwrap()
+        );
+        assert_eq!(
+            bc.open(&ac.seal(b"synthetic character transfer", NOW).unwrap(), NOW)
+                .unwrap()
+                .as_slice(),
+            b"synthetic character transfer"
+        );
+    }
+    let s = session();
+    let secret = PairingSecret::from_characters("ABC234").unwrap();
+    let (a, b) = pending(s.clone(), s, secret.expose_words(), secret.expose_words());
+    assert!(a.confirm(&b.confirmation().unwrap(), NOW).is_ok());
+}
+
+#[test]
+fn wrong_character_code_and_public_alias_do_not_confirm_and_spend_budget() {
+    let s = session();
+    let mut a = PairingGate::new(
+        s.clone(),
+        PairingSecret::from_characters("ABC234").unwrap(),
+        1,
+        NOW,
+    )
+    .unwrap();
+    let public_alias = RendezvousCode::parse("XYZ789").unwrap();
+    let mut b = PairingGate::new(
+        s,
+        PairingSecret::from_characters(public_alias.as_str()).unwrap(),
+        1,
+        NOW,
+    )
+    .unwrap();
+    let ax = a.start(Role::Inviter, NOW, &mut OsRng).unwrap();
+    let bx = b.start(Role::Recipient, NOW, &mut OsRng).unwrap();
+    let ah = ax.hello();
+    let bh = bx.hello();
+    let ap = ax.finish(&bh, NOW).unwrap();
+    let bp = bx.finish(&ah, NOW).unwrap();
+    let aproof = ap.confirmation().unwrap();
+    let bproof = bp.confirmation().unwrap();
+    assert!(ap.confirm(&bproof, NOW).is_err());
+    assert!(bp.confirm(&aproof, NOW).is_err());
+    assert_eq!(a.remaining(), 0);
+    assert_eq!(b.remaining(), 0);
+    assert!(a.start(Role::Inviter, NOW, &mut OsRng).is_err());
+}
+
+#[test]
+fn public_rendezvous_aliases_are_bounded_canonical_and_independent_credentials() {
+    for length in [6, 8, 12, 32] {
+        let code = RendezvousCode::generate(length, &mut OsRng).unwrap();
+        assert_eq!(code.as_str().len(), length);
+        assert_eq!(
+            RendezvousCode::parse(&code.as_str().to_ascii_lowercase()).unwrap(),
+            code
+        );
+    }
+    for length in [0, 5, 33, usize::MAX] {
+        assert!(RendezvousCode::generate(length, &mut OsRng).is_err());
+        assert!(PairingSecret::generate_characters(length, &mut OsRng).is_err());
+    }
 }

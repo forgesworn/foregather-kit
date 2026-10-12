@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.3.0 - 2026-10-12 (experimental character codes)
+
+* Add configurable 6–32 character access secrets using the separately frozen
+  base32-to-en-v1 password encoding. Preserve the existing live PAKE profile
+  and all original stored/spoken/live vectors.
+* Add typed public rendezvous alias helpers, independent of access secrets.
+* Extend the live demo with words/characters, length controls and six-character
+  public room lookup through a bounded, expiring, collision-checked directory.
+* Test native/WASM/word-presentation interoperability, frozen character vectors,
+  public-code-only rejection, wrong secrets, directory limits and expiry.
+* Live pairing and the example transport remain experimental and unaudited.
+
 ## 0.2.1 - 2026-10-12 (experimental hardening release)
 
 * Cancel unused successful resolver response bodies immediately; cover success

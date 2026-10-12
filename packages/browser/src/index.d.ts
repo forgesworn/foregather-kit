@@ -36,3 +36,10 @@ export function createLiveOffer(input: { namespace: string; purpose: string; wor
 export function createLivePairing(input: { session: LiveSession; secretWords: string; namespace: string; purpose: string; role: 'inviter' | 'recipient'; attempts?: number; now: number }): LivePairing;
 export function deriveSpokenWords(input: { secret: Uint8Array; context: string; counter: number; identity?: string; count?: number }): string;
 export function deriveDirectionalWords(input: { secret: Uint8Array; namespace: string; roles: [string, string]; counter: number; count?: number }): [string, string];
+
+/** Character access secret, distinct from a public RendezvousCode. Experimental. */
+export interface CharacterOffer { readonly session: Readonly<LiveSession>; readonly secretCode: string }
+export function createCharacterOffer(input: { namespace: string; purpose: string; characterCount?: number; lifetime?: number; now: number }): CharacterOffer;
+export function createCharacterPairing(input: { session: LiveSession; secretCode: string; namespace: string; purpose: string; role: 'inviter' | 'recipient'; attempts?: number; now: number }): LivePairing;
+export function createRendezvousCode(input?: {length?: number}): string;
+export function canonicalRendezvousCode(code: string): string;

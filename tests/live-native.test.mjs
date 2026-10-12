@@ -4,15 +4,15 @@ import { spawn } from 'node:child_process';
 import { createInterface } from 'node:readline';
 import { readFileSync } from 'node:fs';
 import { createDecipheriv } from 'node:crypto';
-import { init, createLiveOffer, createLivePairing } from '../packages/browser/dist/index.mjs';
+import { init, createLiveOffer, createLivePairing, createCharacterOffer, createCharacterPairing } from '../packages/browser/dist/index.mjs';
 await init({module_or_path:readFileSync(new URL('../packages/browser/dist/foregather_wasm_bg.wasm',import.meta.url))});
 const now=1800000000,namespace='example.rooms',purpose='bootstrap';
-test('native Rust peer pairs with WASM, confirms matching words and exchanges protected invitations',async()=>{
+for(const format of ['words','characters']) test(`native Rust peer pairs with WASM using ${format}, confirms and exchanges protected invitations`,async()=>{
   const peer=spawn(new URL('../target/debug/examples/live-peer',import.meta.url).pathname,[],{stdio:['pipe','pipe','pipe']});
   const lines=createInterface({input:peer.stdout})[Symbol.asyncIterator]();
   const request=async input=>{peer.stdin.write(JSON.stringify({now,...input})+'\n');const line=await lines.next();assert.equal(line.done,false);const result=JSON.parse(line.value);assert.equal(result.error,undefined);return result;};
-  const offer=createLiveOffer({namespace,purpose,now});
-  const gate=createLivePairing({...offer,namespace,purpose,role:'recipient',now});let channel;
+  const offer=(format==='words'?createLiveOffer:createCharacterOffer)({namespace,purpose,now});
+  const gate=(format==='words'?createLivePairing:createCharacterPairing)({...offer,namespace,purpose,role:'recipient',now});let channel;
   try {
     const native=await request({action:'start',...offer,namespace,purpose,role:'inviter'});
     const exchange=gate.start({now}),hello=exchange.hello();

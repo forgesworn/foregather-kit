@@ -108,6 +108,42 @@ pub fn generate_live_offer(
 }
 
 #[wasm_bindgen]
+pub fn generate_character_offer(
+    namespace: &str,
+    purpose: &str,
+    count: u32,
+    lifetime: f64,
+    now: f64,
+) -> Result<String, JsValue> {
+    let session = live::Session::generate(
+        Namespace::parse(namespace).map_err(error)?,
+        Namespace::parse(purpose).map_err(error)?,
+        seconds(lifetime)?,
+        seconds(now)?,
+        &mut OsRng,
+    )
+    .map_err(error)?;
+    let (_, code) =
+        live::PairingSecret::generate_characters(count as usize, &mut OsRng).map_err(error)?;
+    serde_json::to_string(&serde_json::json!({"session":session,"secretCode":code.as_str()}))
+        .map_err(error)
+}
+#[wasm_bindgen]
+pub fn generate_rendezvous_code(count: u32) -> Result<String, JsValue> {
+    Ok(live::RendezvousCode::generate(count as usize, &mut OsRng)
+        .map_err(error)?
+        .as_str()
+        .to_string())
+}
+#[wasm_bindgen]
+pub fn canonical_rendezvous_code(value: &str) -> Result<String, JsValue> {
+    Ok(live::RendezvousCode::parse(value)
+        .map_err(error)?
+        .as_str()
+        .to_string())
+}
+
+#[wasm_bindgen]
 pub fn spoken_words(
     secret: &[u8],
     context: &str,
@@ -172,6 +208,38 @@ impl LiveGate {
                 live::PairingGate::new(
                     session,
                     live::PairingSecret::parse(secret_words).map_err(error)?,
+                    attempts,
+                    now,
+                )
+                .map_err(error)?,
+            ),
+            role,
+        })
+    }
+    pub fn from_code(
+        session: &str,
+        secret_code: &str,
+        role: &str,
+        attempts: u8,
+        now: f64,
+        namespace: &str,
+        purpose: &str,
+    ) -> Result<LiveGate, JsValue> {
+        let now = seconds(now)?;
+        let session = live::Session::parse(session, now).map_err(error)?;
+        if session.namespace != namespace || session.purpose != purpose {
+            return Err(error("context"));
+        }
+        let role = match role {
+            "inviter" => live::Role::Inviter,
+            "recipient" => live::Role::Recipient,
+            _ => return Err(error("role")),
+        };
+        Ok(Self {
+            inner: Some(
+                live::PairingGate::new(
+                    session,
+                    live::PairingSecret::from_characters(secret_code).map_err(error)?,
                     attempts,
                     now,
                 )

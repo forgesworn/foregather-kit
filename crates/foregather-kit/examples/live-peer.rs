@@ -45,7 +45,11 @@ fn main() {
                     started = true;
                     gate = Some(PairingGate::new(
                         s,
-                        PairingSecret::parse(text("secretWords")?)?,
+                        match (v.get("secretWords"), v.get("secretCode")) {
+                            (Some(_), None) => PairingSecret::parse(text("secretWords")?)?,
+                            (None, Some(_)) => PairingSecret::from_characters(text("secretCode")?)?,
+                            _ => return Err(foregather_kit::InvalidInvitation),
+                        },
                         1,
                         now,
                     )?);

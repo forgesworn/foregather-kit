@@ -1,4 +1,4 @@
-import initWasm, { seal_envelope, open_envelope, invitation_locator, generate_live_offer, spoken_words, spoken_directional_words, LiveGate } from './foregather_wasm.js';
+import initWasm, { seal_envelope, open_envelope, invitation_locator, generate_live_offer, generate_character_offer, generate_rendezvous_code, canonical_rendezvous_code, spoken_words, spoken_directional_words, LiveGate } from './foregather_wasm.js';
 
 const MAX_BYTES = 32768;
 const invalid = () => { throw new Error('Invalid invitation'); };
@@ -162,6 +162,26 @@ export function createLivePairing({ session, secretWords, namespace, purpose, ro
   for (const key of ['profile', 'namespace', 'purpose', 'locator']) text(session[key], 128);
   clock(session.issued); clock(session.expires);
   const native = new LiveGate(text(JSON.stringify(session), 1024), text(secretWords, 256), role, integer(attempts, 1, 5), clock(now), domain(namespace), domain(purpose));
+  return managed(native, {
+    remaining() { return native.remaining(); },
+    start({now}) { return exchange(native.start(clock(now))); },
+  });
+}
+
+
+/** Experimental character presentation; the public room code is a separate value. */
+export function createCharacterOffer({ namespace, purpose, characterCount = 6, lifetime = 120, now }) {
+  const offer = JSON.parse(generate_character_offer(domain(namespace), domain(purpose), integer(characterCount, 6, 32), integer(lifetime, 1, 600), clock(now)));
+  return Object.freeze({session:Object.freeze(offer.session),secretCode:offer.secretCode});
+}
+/** Public alias only; applications own its bounded, expiring session directory. */
+export function createRendezvousCode({length = 6} = {}) { return generate_rendezvous_code(integer(length, 6, 32)); }
+export function canonicalRendezvousCode(code) { return canonical_rendezvous_code(text(code,64)); }
+export function createCharacterPairing({ session, secretCode, namespace, purpose, role, attempts = 1, now }) {
+  if (!session || typeof session !== 'object' || !['inviter','recipient'].includes(role)) invalid();
+  for (const key of ['profile','namespace','purpose','locator']) text(session[key],128);
+  clock(session.issued); clock(session.expires);
+  const native = LiveGate.from_code(text(JSON.stringify(session),1024),text(secretCode,64),role,integer(attempts,1,5),clock(now),domain(namespace),domain(purpose));
   return managed(native, {
     remaining() { return native.remaining(); },
     start({now}) { return exchange(native.start(clock(now))); },

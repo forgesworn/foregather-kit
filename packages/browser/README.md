@@ -68,3 +68,20 @@ The [documentation index](https://github.com/forgesworn/foregather-kit/blob/main
 links the threat model, frozen wire formats, self-hosting and validation evidence.
 The installed package is checked with a strict TypeScript consumer; it adds no
 external JavaScript runtime dependencies.
+
+
+Character access secrets use `createCharacterOffer({namespace, purpose,
+characterCount:6, now})`, which returns `{session, secretCode}`. Pass that offer
+to `createCharacterPairing({...offer, namespace, purpose, role, now})` and use
+the same one-use gate/exchange/confirmation/channel lifecycle. Counts are 6–32;
+the alphabet is `0123456789ABCDEFGHJKMNPQRSTVWXYZ`. Six uniformly generated
+characters have 30 bits, less than the default four-word offer's 44 bits.
+
+`createRendezvousCode({length:6})` generates an independent **public** lookup
+alias. `canonicalRendezvousCode(code)` normalises ASCII case and outer whitespace.
+These helpers make no requests. Your transport owns bounded registration,
+collision checking, lookup quotas and expiry, mapping an alias to a full public
+session. Never reuse the alias as the secret or derive a secret from it.
+The [character encoding and lookup guide](https://github.com/forgesworn/foregather-kit/blob/main/docs/character-codes.md)
+explains compatibility and the loopback demo's directory. Live pairing remains
+experimental; neither a public alias nor a confirmed handoff grants room access.
