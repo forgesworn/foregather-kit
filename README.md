@@ -125,12 +125,16 @@ assets requires `application/wasm` for the WASM file.
 
 ## Live pairing and spoken words
 
-Run `npm run demo:live`, open `http://127.0.0.1:8789`, create a pairing, then open
-its public link in another browser context. Speak the secret words separately.
-After both clients pair, compare their verification words and explicitly send
-an invitation for application review. `npm run test:live` automates success,
-wrong-code rejection, private relay contents and explicit handoff. The demo is
-loopback-only; it is not a production relay.
+Run `npm run demo:live` and open `http://127.0.0.1:8789`. Choose words or
+characters and create a pairing. On another client, enter the public room code
+or open the pairing link, then enter the separate private secret. Copy controls
+keep the public code, link and private secret distinct. The share screen shows
+time remaining; Start again creates a fresh local flow after a failure.
+After pairing, compare verification words and explicitly send an invitation for
+application review. The demo adapts to mobile, keyboard input and your system's
+light/dark theme. `npm run test:live` automates both formats, wrong-code rejection,
+clipboard denial, keyboard/mobile handoff and private relay contents. The demo
+is loopback-only; it is not a production relay.
 
 ```js
 import { createLiveOffer, createLivePairing } from '@forgesworn/foregather-kit';

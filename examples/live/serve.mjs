@@ -7,6 +7,7 @@ const slots=new Map(),rooms=new Map();let origin;
 let lookupWindow=0,lookups=0;
 const files=new Map([
   ['/live.mjs',new URL('live.mjs',import.meta.url)],
+  ['/live.css',new URL('live.css',import.meta.url)],
   ...['index.mjs','foregather_wasm.js','foregather_wasm_bg.wasm'].map(name=>[`/pkg/${name}`,new URL(`../../packages/browser/dist/${name}`,import.meta.url)]),
 ]);
 const server=createServer(async(req,res)=>{
@@ -70,7 +71,7 @@ const server=createServer(async(req,res)=>{
     if(req.method!=='GET'){res.writeHead(405).end();return;}
     if(url.pathname==='/'){res.setHeader('Content-Type','text/html');res.end(readFileSync(new URL('index.html',import.meta.url)));return;}
     const file=files.get(url.pathname);if(!file){res.writeHead(404).end();return;}
-    res.setHeader('Content-Type',url.pathname.endsWith('.wasm')?'application/wasm':'text/javascript');res.end(readFileSync(file));
+    res.setHeader('Content-Type',url.pathname.endsWith('.wasm')?'application/wasm':url.pathname.endsWith('.css')?'text/css':'text/javascript');res.end(readFileSync(file));
   } catch {res.writeHead(400).end();}
 });
 server.requestTimeout=10000;server.headersTimeout=5000;
