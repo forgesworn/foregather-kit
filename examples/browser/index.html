@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Foregather invitation demo</title>
+<style>
+  :root { color-scheme:light dark; font:16px system-ui,sans-serif; }
+  body { max-width:42rem; margin:3rem auto; padding:0 1rem; line-height:1.6; }
+  h1 { margin-bottom:0; } section { margin:2rem 0; } label { display:block; font-weight:600; }
+  input,textarea,button { box-sizing:border-box; font:inherit; padding:.65rem; }
+  input,textarea { width:100%; } button { margin-top:.75rem; cursor:pointer; }
+  output { display:block; overflow-wrap:anywhere; white-space:pre-wrap; margin-top:1rem; }
+</style>
+<h1>Foregather</h1>
+<p>Share an invitation privately. Review it before deciding what to do next.</p>
+<section>
+  <h2>Create an invitation</h2>
+  <label for="payload">Invitation to share</label>
+  <textarea id="payload" rows="4" maxlength="18000" placeholder="Paste an invitation from your application"></textarea>
+  <button id="create" disabled>Create private link</button>
+  <label for="share">Share this link</label>
+  <input id="share" readonly aria-describedby="share-note">
+  <p id="share-note">The link expires in one hour. Anyone you give it to can open the invitation.</p>
+</section>
+<section>
+  <h2>Review an invitation</h2>
+  <label for="received">Invitation link</label>
+  <input id="received" type="url">
+  <button id="review" disabled>Review invitation</button>
+  <output id="candidate" aria-live="polite"></output>
+  <p>Opening an invitation does not join a room or grant access. Your application handles that next step.</p>
+</section>
+<section>
+  <button id="remove" disabled>Remove my shared invitation</button>
+  <output id="status" role="status"></output>
+</section>
+<script type="module" src="/demo.mjs"></script>
+</html>

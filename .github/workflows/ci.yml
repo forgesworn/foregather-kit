@@ -1,0 +1,28 @@
+name: verify
+on:
+  push:
+    branches: [main]
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  native-wasm-browser:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+      - run: rustup toolchain install 1.94.1 --profile minimal --component rustfmt --component clippy --target wasm32-unknown-unknown
+      - run: cargo install wasm-bindgen-cli --version 0.2.129 --locked
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run check
+      - run: node scripts/check-package.mjs
+      - run: cargo package --locked -p foregather-kit --allow-dirty
+      - run: npm audit
+      - run: cargo install cargo-deny --version 0.19.0 --locked
+      - run: cargo deny check licenses sources
+      - run: cargo install cargo-audit --version 0.22.1 --locked
+      - run: cargo audit

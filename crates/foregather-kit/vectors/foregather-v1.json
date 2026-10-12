@@ -1,0 +1,35 @@
+{
+  "protocol": "foregather-envelope/v1",
+  "syntheticOnly": true,
+  "generatedBy": "Independent Node AES-256-GCM implementation",
+  "vectors": [
+    {
+      "name": "binary",
+      "namespace": "example.rooms",
+      "now": 1800000000,
+      "base": "https://resolver.example/i/",
+      "url": "https://resolver.example/i/BwcHBwcHBwcHBwcHBwcHBw#CQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQk",
+      "payload": "AP8BgAAq",
+      "envelope": {
+        "v": 1,
+        "expires": 1800003600,
+        "nonce": "CwsLCwsLCwsLCwsL",
+        "ciphertext": "hMvwHs1htOcg24_KOVQ0e5cMUdmLfR--2W5Mel3JG6lEO-GBQqivwlI"
+      }
+    },
+    {
+      "name": "empty",
+      "namespace": "example.rooms",
+      "now": 1800000000,
+      "base": "https://resolver.example/i/",
+      "url": "https://resolver.example/i/EREREREREREREREREREREQ#ExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExM",
+      "payload": "",
+      "envelope": {
+        "v": 1,
+        "expires": 1800003600,
+        "nonce": "FRUVFRUVFRUVFRUV",
+        "ciphertext": "-LQg15ui4CCcZSsbIftljuu96O0sauVE1WJmlFMQpFG6"
+      }
+    }
+  ]
+}

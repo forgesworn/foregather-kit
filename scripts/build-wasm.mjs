@@ -1,0 +1,11 @@
+import { execFileSync } from 'node:child_process';
+import { mkdirSync, copyFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+const root = fileURLToPath(new URL('../', import.meta.url));
+const cwd = { cwd: root, stdio: 'inherit' };
+execFileSync('cargo', ['build', '--locked', '-p', 'foregather-wasm', '--release', '--target', 'wasm32-unknown-unknown'], cwd);
+mkdirSync(`${root}/packages/browser/dist`, { recursive: true });
+execFileSync('wasm-bindgen', ['--target', 'web', '--out-dir', 'packages/browser/dist', '--out-name', 'foregather_wasm', 'target/wasm32-unknown-unknown/release/foregather_wasm.wasm'], cwd);
+for (const name of ['index.mjs', 'index.d.ts']) copyFileSync(`${root}/packages/browser/src/${name}`, `${root}/packages/browser/dist/${name}`);
+copyFileSync(`${root}/LICENSE`, `${root}/packages/browser/LICENSE`);
+execFileSync('python3', ['scripts/generate-licenses.py'], cwd);

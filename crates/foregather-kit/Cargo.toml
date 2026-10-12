@@ -1,0 +1,19 @@
+[package]
+name = "foregather-kit"
+description = "Portable, transport-independent encrypted invitation envelopes"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+readme = "../../README.md"
+
+[dependencies]
+aes-gcm = { version = "0.10.3", features = ["zeroize"] }
+base64.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+rand_core.workspace = true
+zeroize.workspace = true
+url = "2.5"
+
