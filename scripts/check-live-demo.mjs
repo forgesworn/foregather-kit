@@ -28,6 +28,7 @@ try {
   await guest.locator('#code').fill(words);await guest.locator('#pair').click();
   await host.locator('#confirmed').waitFor({state:'visible'});await guest.locator('#confirmed').waitFor({state:'visible'});
   assert.equal(await host.locator('#copy-secret').isVisible(),false);
+  assert.equal(await host.locator('#host').isVisible(),false);
   assert.equal(await guest.locator('#guest').isVisible(),false);
   assert.equal(await host.locator('#step-2').getAttribute('aria-current'),'step');
   assert.equal(await host.locator('#verification').textContent(),await guest.locator('#verification').textContent());

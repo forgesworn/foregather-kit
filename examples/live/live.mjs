@@ -31,8 +31,8 @@ async function get(kind){const peer=role==='inviter'?'recipient':'inviter';while
 async function connect(){active=true;let exchange,pending;try{
   exchange=gate.start({now:now()});await put('hello',exchange.hello());status('Waiting for the other client','waiting');
   pending=exchange.finish({peerHello:await get('hello'),now:now()});await put('proof',pending.proof());
-  channel=pending.confirm({peerProof:await get('proof'),now:now()});gate.dispose();$('secret').textContent='Secret used';$('secret').dataset.format='words';$('copy-secret').hidden=true;$('copy-feedback').textContent='';$('guest').hidden=true;
-  $('verification').textContent=channel.verificationWords({now:now()});$('confirmed').hidden=false;status('Paired — compare the verification words','connected');
+  channel=pending.confirm({peerProof:await get('proof'),now:now()});gate.dispose();$('secret').textContent='Secret used';$('secret').dataset.format='words';$('copy-secret').hidden=true;$('copy-feedback').textContent='';$('guest').hidden=true;$('host').hidden=true;
+  $('verification').textContent=channel.verificationWords({now:now()});$('confirmed').hidden=false;status('Paired — compare the verification words','connected');$('verification-title').focus();
   if(role==='inviter')$('send').hidden=false;
   else {const packet=await get('payload');const payload=channel.open({packet:JSON.stringify(packet),now:now()});$('payload').textContent=new TextDecoder('utf-8',{fatal:true}).decode(payload);payload.fill(0);$('received').hidden=false;status('Invitation received for review','received');}
 } catch {active=false;channel?.dispose();gate?.dispose();$('send').hidden=true;$('confirmed').hidden=true;$('copy-secret').hidden=true;$('secret').textContent='Secret no longer usable';status('Pairing failed or expired. Create a fresh code to retry.','error');} finally{exchange?.dispose();pending?.dispose();}}
@@ -82,7 +82,7 @@ $('find-form').onsubmit=async event=>{event.preventDefault();try{
   $('find').disabled=true;recipient(await publicJson(`/rooms/${code}`,{method:'GET'}));status('Pairing found — enter the separate secret');
 } catch{$('find').disabled=false;status('Pairing not found or expired. Check the public room code.','error');}};
 $('pair-form').onsubmit=event=>{event.preventDefault();try{gate=pairing($('code').value);$('code').value='';$('code').disabled=true;$('pair').disabled=true;void connect();}catch{status('Check the pairing link and secret','error');}};
-$('transfer').onclick=async()=>{try{$('transfer').disabled=true;const payload=new TextEncoder().encode($('invitation').value);const packet=channel.seal({payload,now:now()});payload.fill(0);await put('payload',JSON.parse(packet));status('Encrypted invitation sent for review','sent');}catch{status('Transfer failed','error');}};
+$('transfer').onclick=async()=>{try{$('transfer').disabled=true;const payload=new TextEncoder().encode($('invitation').value);const packet=channel.seal({payload,now:now()});payload.fill(0);await put('payload',JSON.parse(packet));$('transfer').textContent='Invitation sent';$('invitation').disabled=true;status('Encrypted invitation sent for review','sent');}catch{status('Transfer failed','error');}};
 $('copy-room').onclick=()=>copy($('room-code').textContent,'Public room code');
 $('copy-secret').onclick=()=>copy($('secret').textContent,'Private secret');
 $('copy-link').onclick=()=>copy($('link').href,'Pairing link');
