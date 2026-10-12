@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.2.1 - 2026-10-12 (experimental hardening release)
+
+* Cancel unused successful resolver response bodies immediately; cover success
+  and failure cleanup with hostile stream regression cases.
+* Document public core Rust APIs and executable stored/live examples; include
+  the live feature in docs.rs builds and enforce Rustdoc/default-feature checks.
+* Compile the installed browser tarball with a strict TypeScript consumer,
+  including positive and negative public API cases.
+* Add documentation/contribution/support indexes and optional AI navigation.
+* Add weekly CI/advisory scans and dependency-update proposals. Main now
+  requires delivery through a PR and passing CI; independent security
+  review, device/load/fuzz qualification and app adoption remain open.
+* Preserve existing stored, spoken and live protocol bytes.
+
 ## 0.2.0 - 2026-10-12 (experimental release)
 
 * Add opt-in experimental endpoint PAKE with separate locator/secret, bound
