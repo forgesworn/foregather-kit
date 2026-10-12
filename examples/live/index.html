@@ -1,10 +1,100 @@
 <!doctype html>
-<html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Foregather live pairing</title>
-<style>body{font:18px system-ui;max-width:48rem;margin:2rem auto;padding:0 1rem;background:#152129;color:#f4f6f7}button,input,textarea,select{font:inherit;padding:.6rem;margin:.4rem 0;max-width:100%;box-sizing:border-box}button{cursor:pointer}input,textarea{width:100%}section{margin:1.5rem 0}a{color:#a8e4ff}code{overflow-wrap:anywhere}.words{font-size:1.5rem;font-weight:bold}label{display:block} [hidden]{display:none}</style>
-<h1>Foregather live pairing</h1><p>Experimental local demo. Pairing establishes an encrypted handoff; your app still decides who may join.</p>
-<section id="host"><label for="format">Secret format</label><select id="format"><option value="words">Words</option><option value="characters">Characters</option></select><label for="length">Number of words</label><input id="length" type="number" required min="2" max="16" value="4"><button id="create">Create pairing</button><div id="offer" hidden><p>Public room code — use this to find the pairing:</p><p id="room-code" class="words"></p><p>Or open this public link on the other client:</p><a id="link"></a><p id="secret-label">Share these secret words separately:</p><p id="secret" class="words"></p></div></section>
-<section id="lookup"><label for="room">Public room code</label><input id="room" maxlength="64" autocomplete="off" spellcheck="false" placeholder="Six characters"><button id="find">Find pairing</button><p>The public room code grants no access. You also need the separate secret.</p></section><section id="guest" hidden><label for="code">Enter the secret words</label><input id="code" autocomplete="off" spellcheck="false"><button id="pair">Pair devices</button></section>
-<p id="status" role="status">Ready</p><p>Character codes use 0–9 and A–Z excluding I, L, O and U. Pairings expire after two minutes; each endpoint gets one attempt.</p>
-<section id="confirmed" hidden><p>Compare these verification words on both clients:</p><p id="verification" class="words"></p><p>They verify this channel, not a person's identity.</p><div id="send" hidden><label for="invitation">Invitation to hand over</label><textarea id="invitation">Synthetic room invitation: application review required</textarea><button id="transfer">Words match — send invitation</button></div></section>
-<section id="received" hidden><h2>Review invitation</h2><p id="payload"></p><p>Nothing has joined a room. Your app must validate the invitation and ask for consent.</p></section>
-<script type="module" src="/live.mjs"></script></html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>Foregather · Live pairing</title>
+  <link rel="stylesheet" href="/live.css">
+</head>
+<body>
+  <div class="shell" id="shell" data-phase="ready">
+    <header class="masthead">
+      <a class="brand" href="/" aria-label="Foregather home">
+        <svg class="brand-mark" viewBox="0 0 40 40" fill="none" aria-hidden="true"><rect x="2" y="8" width="21" height="25" rx="7" stroke="currentColor" stroke-width="2.5"/><rect x="17" y="7" width="21" height="25" rx="7" fill="var(--surface)" stroke="currentColor" stroke-width="2.5"/><path d="m15 20 4 4 8-8" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span>foregather<span class="brand-dot">.</span></span>
+      </a>
+      <span class="demo-badge"><span class="badge-dot"></span>Local demo</span>
+    </header>
+    <main>
+      <div class="intro">
+        <p class="eyebrow">A little less friction. A little more privacy.</p>
+        <h1><span>A small code.</span><br><span>A private connection.</span></h1>
+        <p class="lede">Pair two clients, compare your words, and hand over an invitation. You choose what happens next.</p>
+      </div>
+      <ol class="steps" aria-label="Pairing progress">
+        <li id="step-1" data-state="current" aria-current="step"><span class="step-number">01</span><span>Share the details</span></li>
+        <li id="step-2"><span class="step-number">02</span><span>Compare the words</span></li>
+        <li id="step-3"><span class="step-number">03</span><span>Hand over an invitation</span></li>
+      </ol>
+      <div class="workspace">
+        <section id="host" class="card" aria-labelledby="host-title">
+          <div id="setup">
+            <p class="eyebrow">Start here</p><h2 id="host-title">Create a pairing</h2>
+            <p class="card-description">Make a fresh code to share with the other client.</p>
+            <form id="create-form">
+              <div class="config-row">
+                <div><label for="format">Secret format</label><select id="format"><option value="words">Words</option><option value="characters">Characters</option></select></div>
+                <div><label for="length">Number of words</label><input id="length" type="number" required min="2" max="16" value="4"></div>
+              </div>
+              <p class="field-note" id="format-help">Four random words. Easy to read aloud.</p>
+              <button id="create" class="button primary" type="submit">Create pairing <span aria-hidden="true">↗</span></button>
+            </form>
+          </div>
+          <div id="offer" hidden>
+            <div class="card-heading"><div><p class="eyebrow">Ready to share</p><h2 id="offer-title">Invite the other client</h2></div><span class="expiry" id="expiry">2:00 left</span></div>
+            <div class="code-block public-code">
+              <div class="code-heading"><span class="code-label">Public room code</span><button class="copy-button" id="copy-room" type="button" aria-label="Copy public room code">Copy</button></div>
+              <p id="room-code" class="code-value"></p>
+              <p class="field-note">Finds this pairing. Share it or <a id="link" target="_blank" rel="noopener noreferrer">open the pairing link <span aria-hidden="true">↗</span></a>.</p>
+              <button class="text-button" id="copy-link" type="button">Copy pairing link</button>
+            </div>
+            <div class="code-block private-code">
+              <div class="code-heading"><span class="code-label" id="secret-label">Private secret words</span><button class="copy-button" id="copy-secret" type="button" aria-label="Copy private secret">Copy</button></div>
+              <p id="secret" class="secret-value"></p>
+              <p class="field-note">Share this separately with the person you want to pair with.</p>
+            </div>
+          </div>
+        </section>
+        <section id="lookup" class="card lookup-card" aria-labelledby="lookup-title">
+          <p class="eyebrow">Already invited?</p><h2 id="lookup-title">Have a room code?</h2>
+          <p class="card-description">Enter the public code from the other client. You'll enter the private secret next.</p>
+          <form id="find-form">
+            <label for="room">Public room code</label>
+            <input id="room" class="room-input" maxlength="64" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="e.g. ABC234" required aria-describedby="room-help">
+            <p class="field-note" id="room-help">Six characters. Upper or lower case is fine.</p>
+            <button id="find" class="button secondary" type="submit">Find pairing <span aria-hidden="true">→</span></button>
+          </form>
+        </section>
+        <section id="guest" class="card" hidden aria-labelledby="guest-title">
+          <p class="eyebrow">You're invited</p><h2 id="guest-title">Enter the private secret</h2>
+          <p class="card-description">Use the separate words or characters shared by the other client.</p>
+          <form id="pair-form">
+            <label for="code">Secret words</label><input id="code" autocomplete="off" autocapitalize="none" spellcheck="false" required aria-describedby="secret-help">
+            <p class="field-note" id="secret-help">Your secret stays on this client.</p>
+            <button id="pair" class="button primary" type="submit">Pair clients <span aria-hidden="true">→</span></button>
+          </form>
+        </section>
+        <section id="confirmed" class="card verification-card" hidden aria-labelledby="verification-title">
+          <p class="eyebrow">One quick check</p><h2 id="verification-title" tabindex="-1">Do your words match?</h2>
+          <p class="card-description">Compare these words on both clients before sending anything.</p>
+          <p id="verification" class="verification-words"></p><p class="field-note">Matching words verify this connection, not a person's identity.</p>
+          <div id="send" class="handoff" hidden>
+            <label for="invitation">Invitation to hand over</label><textarea id="invitation" rows="3">Synthetic room invitation: application review required</textarea>
+            <button id="transfer" class="button primary" type="button">Words match — send invitation <span aria-hidden="true">→</span></button>
+          </div>
+        </section>
+        <section id="received" class="card received-card" hidden aria-labelledby="received-title">
+          <p class="eyebrow">Delivered privately</p><h2 id="received-title">Review your invitation</h2><p id="payload" class="received-payload"></p>
+          <p class="field-note">Receiving an invitation doesn't join a room. Your app validates it and asks for your consent.</p>
+        </section>
+      </div>
+      <div class="status-bar"><span class="status-dot" aria-hidden="true"></span><p id="status" role="status">Ready when you are</p><button id="restart" class="text-button" type="button" hidden>Start again</button></div>
+      <p id="copy-feedback" class="copy-feedback" role="status"></p>
+      <details class="demo-details"><summary>About this demo</summary><p>Pairings last two minutes, with one attempt per client. Character codes use 0–9 and A–Z excluding I, L, O and U. The public code finds a pairing; only the separate private secret can establish a connection.</p><p>Live pairing is experimental and unaudited. This demo transfers invitations; your app handles identity, room admission and consent.</p></details>
+    </main>
+    <footer><span>Part of ForgeSworn</span><span>MIT · © TheCryptoDonkey</span></footer>
+  </div>
+  <script type="module" src="/live.mjs"></script>
+</body>
+</html>

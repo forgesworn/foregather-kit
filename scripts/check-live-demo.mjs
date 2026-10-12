@@ -13,10 +13,24 @@ try {
   await host.goto(origin);await host.locator('#create').click();await host.locator('#offer').waitFor({state:'visible'});
   const link=await host.locator('#link').getAttribute('href'),words=await host.locator('#secret').textContent();
   assert.equal(words.split(' ').length,4);assert.equal(link.includes(words),false);
+  // Sharing controls copy exactly the selected value; denied clipboard access stays usable.
+  await host.context().grantPermissions(['clipboard-read','clipboard-write'],{origin});
+  for(const [button,value] of [['copy-room',await host.locator('#room-code').textContent()],['copy-secret',words],['copy-link',link]]) {
+    await host.locator(`#${button}`).click();
+    assert.equal(await host.evaluate(()=>navigator.clipboard.readText()),value);
+  }
+  await host.evaluate(()=>{window.restoreClipboard=navigator.clipboard.writeText.bind(navigator.clipboard);navigator.clipboard.writeText=()=>Promise.reject(Error('Denied'));});
+  await host.locator('#copy-room').click();
+  await host.getByText('Could not copy. Select the text and copy it manually.',{exact:true}).waitFor();
+  await host.evaluate(()=>{navigator.clipboard.writeText=window.restoreClipboard;delete window.restoreClipboard;});
   await guest.goto(link);await guest.locator('#guest').waitFor({state:'visible'});
   assert.equal(requests.some(r=>r.client==='guest'),false);
   await guest.locator('#code').fill(words);await guest.locator('#pair').click();
   await host.locator('#confirmed').waitFor({state:'visible'});await guest.locator('#confirmed').waitFor({state:'visible'});
+  assert.equal(await host.locator('#copy-secret').isVisible(),false);
+  assert.equal(await host.locator('#host').isVisible(),false);
+  assert.equal(await guest.locator('#guest').isVisible(),false);
+  assert.equal(await host.locator('#step-2').getAttribute('aria-current'),'step');
   assert.equal(await host.locator('#verification').textContent(),await guest.locator('#verification').textContent());
   assert.equal(await guest.locator('#received').isVisible(),false);
   const plaintext='Synthetic review-only room invitation 🫏';await host.locator('#invitation').fill(plaintext);await host.locator('#transfer').click();
@@ -31,6 +45,8 @@ try {
   await wrongGuest.getByText('Pairing failed or expired. Create a fresh code to retry.',{exact:true}).waitFor();
   await wrongHost.getByText('Pairing failed or expired. Create a fresh code to retry.',{exact:true}).waitFor();
   assert.equal(await wrongGuest.locator('#confirmed').isVisible(),false);assert.equal(await wrongHost.locator('#send').isVisible(),false);
+  await wrongGuest.locator('#restart').click();await wrongGuest.locator('#create').waitFor({state:'visible'});
+  assert.equal(new URL(wrongGuest.url()).hash,'');
   // Public-room lookup supports both secret presentations and does not spend a PAKE attempt.
   for(const format of ['words','characters']) {
     const h=await browser.newPage(),g=await browser.newPage();watch(h,`${format}Host`);watch(g,`${format}Guest`);
@@ -39,14 +55,16 @@ try {
     const roomCode=await h.locator('#room-code').textContent(),secret=await h.locator('#secret').textContent();
     assert.match(roomCode,/^[0-9A-HJKMNP-TV-Z]{6}$/);
     if(format==='words')assert.equal(secret.split(' ').length,6);else assert.match(secret,/^[0-9A-HJKMNP-TV-Z]{6}$/);
-    await g.goto(origin);await g.locator('#room').fill(roomCode.toLowerCase());await g.locator('#find').click();
+    await g.setViewportSize({width:375,height:812});
+    await g.goto(origin);await g.locator('#room').fill(roomCode.toLowerCase());await g.locator('#room').press('Enter');
     await g.locator('#guest').waitFor({state:'visible'});
     assert.equal(requests.some(r=>r.client===`${format}Guest`&&r.url.includes('/relay/')),false);
-    await g.locator('#code').fill(secret);await g.locator('#pair').click();
+    await g.locator('#code').fill(secret);await g.locator('#code').press('Enter');
     await h.locator('#confirmed').waitFor({state:'visible'});await g.locator('#confirmed').waitFor({state:'visible'});
     assert.equal(await h.locator('#verification').textContent(),await g.locator('#verification').textContent());
     const candidate=`Synthetic ${format} room-code handoff`;await h.locator('#invitation').fill(candidate);await h.locator('#transfer').click();
     await g.locator('#received').waitFor({state:'visible'});assert.equal(await g.locator('#payload').textContent(),candidate);
+    assert.equal(await g.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
     for(const r of requests.filter(r=>r.client.startsWith(format)))assert.equal(r.body?.includes(secret)??false,false);
   }
   const codeHost=await browser.newPage(),codeGuest=await browser.newPage();
@@ -83,7 +101,7 @@ try {
   const racing=await Promise.all([write(),write()]);assert.deepEqual(racing.map(r=>r.status).sort(),[201,409]);
   assert.equal((await fetch(route.replace('/hello','/payload'),{method:'POST',headers:{Origin:origin},body:'x'.repeat(24577)})).status,413);
   assert.deepEqual(external,[]);
-  console.log(JSON.stringify({passed:true,twoBrowserClients:true,wrongCodeRejected:true,noSecretOrPlaintextAtRelay:true,explicitHandoffAndReview:true,wordAndCharacterSecrets:true,publicRoomLookup:true,publicCodeCannotPair:true,expiredAliasRejected:true,directoryBudgets:true,writeOnceRace:true,externalRequests:0,browser:browser.version()}));
+  console.log(JSON.stringify({passed:true,twoBrowserClients:true,wrongCodeRejected:true,noSecretOrPlaintextAtRelay:true,explicitHandoffAndReview:true,wordAndCharacterSecrets:true,publicRoomLookup:true,publicCodeCannotPair:true,clipboardAndDenial:true,keyboardAndMobileHandoff:true,restartAfterFailure:true,expiredAliasRejected:true,directoryBudgets:true,writeOnceRace:true,externalRequests:0,browser:browser.version()}));
 } finally {
   await browser?.close();
   if(child.exitCode===null){child.kill('SIGINT');await once(child,'exit');}
