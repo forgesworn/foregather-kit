@@ -1,6 +1,6 @@
 # Security boundaries
 
-Foregather v0.1 is an early stored-invitation implementation. Automated tests and
+Foregather v0.2 adds spoken compatibility and experimental live pairing to stored invitations. Automated tests and
 dependency advisory checks are evidence, not an independent protocol/security
 audit. Use your application's current authority and consent checks after
 recovery. Do not replace working admission merely because an envelope opens.
@@ -42,6 +42,33 @@ Creation authority is not distributed to public browser assets by this library.
 Resource limits do not establish resistance to every distributed denial of
 service attack. Actual room admission must enforce its own revocation, consent,
 replay and concurrency rules.
+
+## Experimental live pairing
+
+The opt-in live profile uses pinned RustCrypto spake2 0.4.0, not an independently
+audited or RFC 9382-compatible implementation. See [the full transcript and
+local source review](docs/live-protocol.md) before enabling it. The public locator
+is independent of secret words; explicit key confirmation precedes any protected
+handoff. Endpoints spend attempts on start, including cancellations. Keep one
+gate per code, dispose it after success and never recreate it for the same code.
+Relay quotas are not the password guessing boundary. A malicious relay can
+exhaust budgets and deny delivery. App-owned transport must bound streams and
+must not log codes, capabilities or plaintext. The bundled relay is a loopback
+demonstration, not a production live service.
+
+Owned Foregather secrets/keys are zeroized, but upstream SPAKE2 Password, scalar
+and internal state copies do not all zeroize on drop. JavaScript strings and
+transfer copies may remain too. Do not claim deterministic erasure or protection
+from an endpoint/process memory compromise. Dispose abandoned browser states;
+never persist code/key/channel state or resume counters after restart.
+
+Confirmed channels use distinct direction keys and ordered authenticated packet
+counters. They expire with the pairing session and are for bootstrap only.
+Joystick's continuing traffic needs its own authenticated encryption and host
+admission; this library does not secure its existing plaintext broker. Spoken
+verification phrases prove channel/shared-secret knowledge, not personal identity
+or room authority. Independent PAKE and composition review remain required
+before production adoption. Dependency scans do not replace that review.
 
 ## Dependencies and portability
 

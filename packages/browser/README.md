@@ -30,5 +30,18 @@ WASM; there are no external JavaScript runtime packages or required hosted servi
 
 Stored bearer URLs can be copied and replayed. Expiry/deletion does not erase
 captured ciphertext or revoke an invitation already recovered. JavaScript secret
-strings cannot be deterministically erased. This version implements stored
-envelopes; live PAKE, mobile FFI and an independent security review remain open.
+strings cannot be deterministically erased. Version 0.2 also includes Spoken Token v2 words and experimental live PAKE.
+Mobile FFI, app migrations and an independent security review remain open.
+
+Live: createLiveOffer creates separate public session and secretWords;
+createLivePairing takes locally chosen namespace/purpose and a fixed role.
+Use gate.start, exchange.finish and pending.confirm exactly once, then encrypt
+bootstrap data with channel.seal/open. Keep one gate for the code lifetime;
+cancellation spends the default single attempt. Dispose abandoned states,
+and obtain fresh words AND a fresh locator to retry. Never send secretWords
+to a relay. The pinned SPAKE2 dependency has no independent audit and uses its
+own profile, not RFC 9382 wire bytes. This feature requires independent review
+before production adoption. See the root repository docs/live-protocol.md.
+
+deriveSpokenWords and deriveDirectionalWords implement the frozen en-v1 words
+profile. Counters, identities and application replay/attempt budgets are explicit.

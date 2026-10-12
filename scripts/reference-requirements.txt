@@ -1,0 +1,5 @@
+# Test-only independent implementation, not Foregather runtime dependencies.
+spake2==0.9
+cryptography==50.0.1
+cffi==2.0.0
+pycparser==3.0

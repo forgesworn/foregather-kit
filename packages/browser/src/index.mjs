@@ -1,4 +1,4 @@
-import initWasm, { seal_envelope, open_envelope, invitation_locator } from './foregather_wasm.js';
+import initWasm, { seal_envelope, open_envelope, invitation_locator, generate_live_offer, spoken_words, spoken_directional_words, LiveGate } from './foregather_wasm.js';
 
 const MAX_BYTES = 32768;
 const invalid = () => { throw new Error('Invalid invitation'); };
@@ -103,5 +103,63 @@ export function createResolverClient({ apiUrl, allowLoopbackHttp = false, fetch:
     },
     async fetch({ id, signal }) { return boundedText(await request('GET', publicId(id), undefined, undefined, signal)); },
     async delete({ id, deleteToken, signal }) { await request('DELETE', publicId(id), undefined, deleteToken, signal); },
+  });
+}
+
+// Live pairing is experimental; transport callbacks belong to the application.
+function integer(value, min, max) { if (!Number.isSafeInteger(value) || value < min || value > max) invalid(); return value; }
+function text(value, max) { if (typeof value !== 'string' || value.length > max) invalid(); return value; }
+function domain(value) { if (typeof value !== 'string' || !/^[a-z][a-z0-9._-]{0,63}$/.test(value)) invalid(); return value; }
+function clock(now) { return integer(now, 0, Number.MAX_SAFE_INTEGER); }
+function secretBytes(secret) { if (!(secret instanceof Uint8Array) || secret.length < 16 || secret.length > 1024) invalid(); return secret; }
+export function deriveSpokenWords({ secret, context, counter, identity, count = 3 }) {
+  if (identity !== undefined) text(identity, 1024);
+  return spoken_words(secretBytes(secret), text(context, 1024), integer(counter, 0, 0xffffffff), identity, integer(count, 1, 16));
+}
+export function deriveDirectionalWords({ secret, namespace, roles, counter, count = 3 }) {
+  if (!Array.isArray(roles) || roles.length !== 2) invalid();
+  return JSON.parse(spoken_directional_words(secretBytes(secret), text(namespace, 1024), text(roles[0], 1024), text(roles[1], 1024), integer(counter, 0, 0xffffffff), integer(count, 1, 16)));
+}
+export function createLiveOffer({ namespace, purpose, wordCount = 4, lifetime = 120, now }) {
+  const offer = JSON.parse(generate_live_offer(domain(namespace), domain(purpose), integer(wordCount, 2, 16), integer(lifetime, 1, 600), clock(now)));
+  return Object.freeze({session: Object.freeze(offer.session), secretWords: offer.secretWords});
+}
+function managed(native, methods) {
+  let disposed = false;
+  const requireAlive = () => { if (disposed) invalid(); };
+  const result = { dispose() { if (!disposed) { disposed = true; native.free(); } } };
+  for (const [name, method] of Object.entries(methods)) result[name] = (...args) => { requireAlive(); return method(...args); };
+  return Object.freeze(result);
+}
+function channel(native) {
+  return managed(native, {
+    verificationWords({count = 3, now}) { return native.verification_words(integer(count, 1, 16), clock(now)); },
+    seal({payload, now}) { if (!(payload instanceof Uint8Array) || payload.length > 16384) invalid(); return native.seal(payload, clock(now)); },
+    open({packet, now}) { return native.open(text(packet, 24576), clock(now)); },
+  });
+}
+function pending(native) {
+  const result = managed(native, {
+    proof() { return native.proof(); },
+    confirm({peerProof, now}) { try { return channel(native.confirm(text(peerProof, 43), clock(now))); } finally { result.dispose(); } },
+  });
+  return result;
+}
+function exchange(native) {
+  const result = managed(native, {
+    hello() { return native.hello(); },
+    finish({peerHello, now}) { try { return pending(native.finish(text(peerHello, 44), clock(now))); } finally { result.dispose(); } },
+  });
+  return result;
+}
+/** Keep this gate for the secret's complete lifetime. Cancelled starts spend attempts. */
+export function createLivePairing({ session, secretWords, namespace, purpose, role, attempts = 1, now }) {
+  if (!session || typeof session !== 'object' || !['inviter', 'recipient'].includes(role)) invalid();
+  for (const key of ['profile', 'namespace', 'purpose', 'locator']) text(session[key], 128);
+  clock(session.issued); clock(session.expires);
+  const native = new LiveGate(text(JSON.stringify(session), 1024), text(secretWords, 256), role, integer(attempts, 1, 5), clock(now), domain(namespace), domain(purpose));
+  return managed(native, {
+    remaining() { return native.remaining(); },
+    start({now}) { return exchange(native.start(clock(now))); },
   });
 }

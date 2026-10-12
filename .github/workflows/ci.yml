@@ -15,12 +15,16 @@ jobs:
         with:
           node-version: '24'
       - run: rustup toolchain install 1.94.1 --profile minimal --component rustfmt --component clippy --target wasm32-unknown-unknown
+      - run: rustup override set 1.94.1
       - run: cargo install wasm-bindgen-cli --version 0.2.129 --locked
       - run: npm ci
       - run: npx playwright install --with-deps chromium
       - run: npm run check
+      - run: python3 -m venv target/pake-reference-venv
+      - run: target/pake-reference-venv/bin/pip install -r scripts/reference-requirements.txt
+      - run: target/pake-reference-venv/bin/python scripts/check-pake-reference.py
       - run: node scripts/check-package.mjs
-      - run: cargo package --locked -p foregather-kit --allow-dirty
+      - run: cargo package --locked -p foregather-kit --all-features --allow-dirty
       - run: npm audit
       - run: cargo install cargo-deny --version 0.19.0 --locked
       - run: cargo deny check licenses sources

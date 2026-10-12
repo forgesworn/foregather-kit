@@ -9,6 +9,11 @@ authors.workspace = true
 readme = "../../README.md"
 
 [dependencies]
+sha2.workspace = true
+hmac = "0.12"
+hkdf = { version = "0.12", optional = true }
+spake2 = { version = "=0.4.0", default-features = false, optional = true }
+curve25519-dalek = { version = "4", optional = true }
 aes-gcm = { version = "0.10.3", features = ["zeroize"] }
 base64.workspace = true
 serde.workspace = true
@@ -16,3 +21,6 @@ serde_json.workspace = true
 rand_core.workspace = true
 zeroize.workspace = true
 url = "2.5"
+
+[features]
+experimental-live = ["dep:hkdf", "dep:spake2", "dep:curve25519-dalek"]

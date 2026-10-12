@@ -1,42 +1,62 @@
-# Local validation — 2026-10-12
+# Local validation — 2026-10-12, v0.2.0
 
-Environment: macOS ARM64, Rust 1.94.1, Node 24.21.0,
+Environment: macOS ARM64, Rust 1.94.1, Node 24.21.0, Python 3.14,
 wasm-bindgen 0.2.129, Playwright Chromium 151.0.7922.34.
-All invitation and management material used by these checks is synthetic.
+All invitation, pairing and management material used by these checks is synthetic.
 
 | Gate | Evidence |
 | --- | --- |
-| Rust format and lint | `cargo fmt --all --check`; Clippy with warnings denied, all workspace targets |
-| Native core | 12 passing tests: independent vectors, namespace/profile substitution, tampering, expiry, canonical input, limits, entropy failure; 4,096 deterministic hostile mutations |
-| Resolver | 8 passing tests: restart, durable quotas, expiry, independent management authority, write-once races, bounded HTTP, stored-capability hashes, cancellation retains database work budget |
-| Node/WASM | 16 passing tests: native/WASM/independent Node AES interoperability, KithMoot vectors, streaming/allocation limits, cancellation, safe endpoints, caller validation |
-| Real Chromium codec | Independent KithMoot vectors opened, generated ciphertext authenticated by Node, tampering rejected; zero external requests |
-| Real resolver process | Native inviter to WASM recipient; ciphertext survives process restart; wrong deletion authority refused; deletion observed; creation budget survives restart |
-| Two browser clients | Create/share/review/delete through the local example; no invitation fetch before explicit review; no external requests; outside-origin creation rejected |
-| Existing Fold consumer | Read-only check against KithMoot's installed `fold-kit#eaa3495127e55242cf8a09e4c57963c570d68e8d`; both v2/v3 invitations preserved, legacy traffic-secret invitation rejected |
-| Browser distribution | Tarball installed into a separate temporary project and used through its published package entry; WASM, declarations, MIT and dependency licence texts included; zero external JS runtime dependencies |
-| Rust distribution | Core crate packaged and compiled from the packaged sources |
-| Dependency checks | RustSec scan: zero vulnerabilities/warnings; npm audit: zero reported vulnerabilities; cargo-deny permissive licences and registry sources pass |
+| Rust format/lint | Formatting; all workspace targets/features with Clippy warnings denied |
+| Stored native core | 12 tests: independent vectors, profile/context tampering, expiry, canonical input, limits, entropy failure; 4,096 deterministic hostile mutations |
+| Live native core | 9 tests: frozen full transcript/keys, confirmation, wrong codes/context/roles, point validation, cancellation budget, fallible entropy, expiry/clock rollback, ordering/tampering/replay, configurable codes |
+| Spoken native core | 2 tests: frozen en-v1 hash, v2 word/directional vectors and domain/input limits |
+| Resolver | 8 tests: restart, durable quotas, expiry, management authority, write-once races, bounded HTTP, stored-capability hashes and cancellation/work budget |
+| Node/WASM | 23 tests: native/WASM live pairing, stored and live Node AES interoperability, spoken HMAC agreement, wrong-code/lifecycle/bounds and existing resolver client cases |
+| Independent PAKE implementation | Python spake2 0.9 reproduces both native hellos, shared-key derivations, confirmation proofs, verification words and encrypted bootstrap; separate pinned venv |
+| Real Chromium codec | Stored frozen vectors opened and browser ciphertext authenticated by Node; zero external requests |
+| Real resolver process | Native inviter to WASM recipient; restart persistence; independent deletion; durable creation budget |
+| Stored two-client demo | Explicit create/share/review/delete, no fetch before review, no external requests, outside-origin creation rejected |
+| Live two-client demo | Matching verification, explicit encrypted handoff for review; wrong code fails both endpoints; no secret/plaintext at relay; write-once race, oversized body and cross-origin write rejection; zero external requests |
+| Existing Fold consumer | Read-only installed parser check for KithMoot v2/v3 invitation bytes; does not exercise live room admission |
+| Browser distribution | Isolated tarball install exercises stored/live/spoken public exports; WASM, declarations, MIT and dependency licence texts included; zero external JS runtime dependencies |
+| Rust distribution | Core packaged and compiled with all features, including opt-in live pairing |
+| Dependency checks | RustSec and npm advisory scans; cargo-deny permissive licences/registry sources |
 
-The generated WASM is 459,910 bytes, or 176,367 bytes gzipped. A local Chromium
-run measured 14.7 ms for WASM initialization; this is a single-machine diagnostic,
-not a supported-device performance or memory budget. The browser package tarball
-including licences was about 200 KiB during its isolated install check.
+There are 54 passing Rust/Node tests (31 Rust, 23 Node), plus the separate
+Chromium/service/package/reference journeys. The Python check establishes
+independent implementation agreement, not a protocol proof or security audit.
+Type declarations are included and API shapes are exercised in JavaScript;
+a standalone TypeScript compiler acceptance gate is not yet implemented.
+
+The current WASM is 629,990 bytes (233,613 bytes gzipped); the browser tarball
+with licence texts is 267,761 bytes. The last local Chromium initialization was
+19.4 ms. These are single-machine diagnostics, not a phone performance or memory
+guarantee. Live PAKE increases
+the browser build versus stored-only v0.1. Native stored consumers leave the
+experimental-live feature disabled and do not compile its curve/PAKE dependencies.
 
 ## Remaining gates
 
-Hosted CI has been defined but not run. This local repository has not been
-published to GitHub, npm or crates.io. No production resolver/domain was deployed.
-The current Joystick, Covey and KithMoot apps have not been migrated. The Fold
-check exercises its parser and invitation bytes, not live room admission.
+Hosted CI is defined but has not run. This local repository has not been
+published to GitHub, npm or crates.io. No production resolver/domain/live relay
+was deployed. Joystick, Covey and KithMoot have not been migrated; application
+admission, host/controller authority and continuing traffic encryption remain
+owned by their existing protocols.
 
-Live PAKE pairing, spoken encoding/verification and native Swift/Kotlin FFI are
-not implemented. There is no physical phone, external network, recovery/load,
-full coverage-guided fuzzing or independent security-review acceptance. The
-stored mode has no forward-secrecy, anonymity or guaranteed deletion claim.
+Live pairing is experimental. RustCrypto spake2 0.4.0 is unaudited, uses its own
+profile rather than RFC 9382 wire bytes, and does not erase all internal secret
+copies. Foregather has no independent PAKE/composition/security review. The
+bundled live relay is loopback demo infrastructure. Do not interpret the tests
+or advisory scans as production security acceptance.
 
-Reproduce functional gates with `npm run check`, the optional existing-consumer
-check with `node scripts/check-kithmoot.mjs ../kithmoot`, and distribution with
-`node scripts/check-package.mjs` and `cargo package -p foregather-kit --allow-dirty`.
-The full check includes local services and temporary databases; it stops them
-and removes its own test directories on completion.
+Swift/Kotlin FFI, physical phones, external networks, recovery/load testing,
+coverage-guided fuzzing and production relay qualification remain open.
+Stored mode has no forward-secrecy, anonymity or guaranteed-deletion claim.
+No deterministic process-memory erasure is claimed for either mode.
+
+Reproduce functional gates with `npm run check`, parser compatibility with
+`node scripts/check-kithmoot.mjs ../kithmoot`, browser distribution with
+`node scripts/check-package.mjs`, and Rust distribution with
+`cargo package --locked -p foregather-kit --all-features --allow-dirty`.
+The independent reference setup/command is in docs/live-protocol.md. The full
+functional check stops its local services and removes its own temporary test DBs.
