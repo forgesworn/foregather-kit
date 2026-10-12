@@ -52,3 +52,24 @@ test('caller cancellation is propagated to the explicit transport',async()=>{
   const client=createResolverClient({apiUrl,fetch:async(_url,options)=>{assert.equal(options.signal.aborted,true);throw new DOMException('Aborted','AbortError');}});
   await assert.rejects(()=>client.fetch({id,signal:controller.signal}),{name:'AbortError'});
 });
+
+
+test('successful upload/delete discard unexpected streaming bodies without reading them', async()=>{
+  const cancelled=[];
+  const client=createResolverClient({apiUrl,fetch:async(_url,options)=>new Response(new ReadableStream({
+    start(controller) { controller.enqueue(new Uint8Array(32769)); },
+    cancel() { cancelled.push(options.method); },
+  }))});
+  await client.upload({id,uploadToken:token,envelope:'{}'});
+  await client.delete({id,deleteToken:token});
+  assert.deepEqual(cancelled,['PUT','DELETE']);
+});
+
+test('failed requests cancel the response body before rejecting', async()=>{
+  let cancelled=false;
+  const client=createResolverClient({apiUrl,fetch:async()=>new Response(new ReadableStream({
+    cancel() { cancelled=true; },
+  }),{status:403})});
+  await assert.rejects(()=>client.fetch({id}), /Resolver request failed \(403\)/);
+  assert.equal(cancelled,true);
+});

@@ -21,7 +21,7 @@ authority returns 404. A repeated valid upload within its deadline returns 409.
 The resolver validates envelope structure and length; it cannot authenticate
 encrypted content. It accepts either wire profile without seeing a namespace.
 
-Creation is intentionally permissioned in v0.1. The operator token is suitable
+Creation is intentionally permissioned in v0.1 and v0.2. The operator token is suitable
 for a trusted backend or local operator, not embedding in a public app bundle.
 An app wishing to permit ordinary users to create invitations needs its own
 scoped issuance/proxy policy. Operator rotation changes creation authority;

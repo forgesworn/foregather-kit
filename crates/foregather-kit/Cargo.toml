@@ -28,3 +28,6 @@ url = "2.5"
 
 [features]
 experimental-live = ["dep:hkdf", "dep:spake2", "dep:curve25519-dalek"]
+
+[package.metadata.docs.rs]
+all-features = true

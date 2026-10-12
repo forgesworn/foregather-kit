@@ -1,6 +1,33 @@
 //! Encrypted invitation transfer. Opening authenticates the envelope, not membership.
 //! No network, wall clock, identity lookup or room admission lives here.
+//!
+//! # Stored invitation round trip
+//!
+//! ```
+//! use foregather_kit::{Locator, Namespace, Profile, ResolverLocation, seal, open};
+//! use rand_core::OsRng;
+//!
+//! let mut rng = OsRng;
+//! // Supply trusted Unix seconds; this example uses a synthetic fixed time.
+//! let now = 1_800_000_000;
+//! let profile = Profile::V1(Namespace::parse("example.rooms")?);
+//! let location = ResolverLocation::parse("https://invites.example/i/", false)?;
+//! let id = Locator::generate(&mut rng)?;
+//! let (invitation, envelope) = seal(&profile, id, b"application invitation", now + 120, now, &mut rng)?;
+//! let url = invitation.to_url(&location); // Bearer secret: never log this URL.
+//! let recovered = location.parse_invitation(&url)?;
+//! let candidate = open(&profile, &recovered, &envelope.to_json()?, now)?;
+//! assert_eq!(candidate.as_slice(), b"application invitation");
+//! // Validate candidate and obtain consent in the application's admission layer.
+//! # Ok::<(), foregather_kit::InvalidInvitation>(())
+//! ```
+//!
+//! [`spoken`] implements frozen Spoken Token v2 words. Enable `experimental-live`
+//! for the unaudited live bootstrap profile; it is not RFC 9382 wire compatible.
+//! See the [documentation index](https://github.com/forgesworn/foregather-kit/blob/main/docs/README.md)
+//! for protocol bytes, hosting, threat model and validation limits.
 #![forbid(unsafe_code)]
+#![deny(missing_docs)]
 
 #[cfg(feature = "experimental-live")]
 pub mod live;
@@ -17,11 +44,15 @@ use std::fmt;
 use url::Url;
 use zeroize::{Zeroize, Zeroizing};
 
+/// Maximum accepted envelope, URL or encoded input size in bytes.
 pub const MAX_ENVELOPE_BYTES: usize = 32 * 1024;
+/// Maximum stored invitation lifetime: seven days.
 pub const MAX_LIFETIME_SECONDS: u64 = 7 * 24 * 60 * 60;
+/// Largest integer seconds value representable exactly by JavaScript.
 pub const MAX_SAFE_SECONDS: u64 = 9_007_199_254_740_991;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// Uniform failure for malformed, expired or unauthenticated invitations.
 pub struct InvalidInvitation;
 impl fmt::Display for InvalidInvitation {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -29,11 +60,14 @@ impl fmt::Display for InvalidInvitation {
     }
 }
 impl std::error::Error for InvalidInvitation {}
+/// Result with a deliberately non-diagnostic invitation error.
 pub type Result<T> = std::result::Result<T, InvalidInvitation>;
 
+/// Encode bytes as canonical unpadded base64url.
 pub fn encode(bytes: &[u8]) -> String {
     URL_SAFE_NO_PAD.encode(bytes)
 }
+/// Decode bounded, nonempty canonical unpadded base64url; reject alternate spellings.
 pub fn decode(value: &str) -> Result<Vec<u8>> {
     if value.is_empty() || value.len() > MAX_ENVELOPE_BYTES {
         return Err(InvalidInvitation);
@@ -55,15 +89,18 @@ fn array<const N: usize>(value: &str) -> Result<[u8; N]> {
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Locator([u8; 16]);
 impl Locator {
+    /// Parse the canonical representation; malformed or out-of-policy inputs fail.
     pub fn parse(value: &str) -> Result<Self> {
         Ok(Self(array(value)?))
     }
+    /// Generate an independent 128-bit public locator using trusted fallible entropy.
     pub fn generate(rng: &mut (impl RngCore + CryptoRng)) -> Result<Self> {
         let mut bytes = [0; 16];
         rng.try_fill_bytes(&mut bytes)
             .map_err(|_| InvalidInvitation)?;
         Ok(Self(bytes))
     }
+    /// Return the canonical public locator, without any bearer secret.
     pub fn encoded(self) -> String {
         encode(&self.0)
     }
@@ -73,6 +110,7 @@ impl Locator {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Namespace(String);
 impl Namespace {
+    /// Parse the canonical representation; malformed or out-of-policy inputs fail.
     pub fn parse(value: &str) -> Result<Self> {
         if value.is_empty()
             || value.len() > 64
@@ -85,6 +123,7 @@ impl Namespace {
         }
         Ok(Self(value.into()))
     }
+    /// Borrow the validated domain-separation label.
     pub fn as_str(&self) -> &str {
         &self.0
     }
@@ -93,7 +132,9 @@ impl Namespace {
 /// Explicit wire profiles. Compatibility does not validate Fold admission semantics.
 #[derive(Clone, Debug)]
 pub enum Profile {
+    /// Generic stored v1 envelope, bound to this application namespace.
     V1(Namespace),
+    /// Frozen KithMoot short-link format; caller still runs its Fold validator.
     KithmootV1,
 }
 impl Profile {
@@ -113,6 +154,7 @@ impl Profile {
 #[derive(Clone, Debug)]
 pub struct ResolverLocation(Url);
 impl ResolverLocation {
+    /// Validate a canonical trailing-slash endpoint; HTTP is allowed only on explicit loopback.
     pub fn parse(base: &str, allow_loopback_http: bool) -> Result<Self> {
         let url = Url::parse(base).map_err(|_| InvalidInvitation)?;
         let loopback = matches!(url.host_str(), Some("localhost" | "127.0.0.1" | "[::1]"));
@@ -133,6 +175,7 @@ impl ResolverLocation {
     fn address(&self, id: Locator, key: &[u8; 32]) -> String {
         format!("{}{}#{}", self.0, id.encoded(), encode(key))
     }
+    /// Parse a bearer URL bound to this endpoint, without making any request.
     pub fn parse_invitation(&self, value: &str) -> Result<Invitation> {
         if value.len() > MAX_ENVELOPE_BYTES {
             return Err(InvalidInvitation);
@@ -169,6 +212,7 @@ impl fmt::Debug for Invitation {
     }
 }
 impl Invitation {
+    /// Return only the public lookup address.
     pub fn locator(&self) -> Locator {
         self.id
     }
@@ -178,15 +222,18 @@ impl Invitation {
     }
 }
 
+/// Versioned encrypted stored envelope. Parsing alone does not authenticate it.
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(deny_unknown_fields)]
 pub struct Envelope {
     v: u8,
+    /// Expiry in Unix seconds, authenticated by `open`; structural parsing does not verify it.
     pub expires: u64,
     nonce: String,
     ciphertext: String,
 }
 impl Envelope {
+    /// Serialize the envelope, enforcing the wire size bound.
     pub fn to_json(&self) -> Result<String> {
         let text = serde_json::to_string(self).map_err(|_| InvalidInvitation)?;
         if text.len() > MAX_ENVELOPE_BYTES {
@@ -211,6 +258,7 @@ impl Envelope {
     }
 }
 
+/// Require future expiry within seven days and JavaScript-safe Unix seconds.
 pub fn lifetime(expires: u64, now: u64) -> Result<()> {
     if now > MAX_SAFE_SECONDS
         || expires > MAX_SAFE_SECONDS

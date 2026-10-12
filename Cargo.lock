@@ -281,7 +281,7 @@ checksum = "77ce24cb58228fbb8aa041425bb1050850ac19177686ea6e0f41a70416f56fdb"
 
 [[package]]
 name = "foregather-kit"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "aes-gcm",
  "base64",
@@ -299,7 +299,7 @@ dependencies = [
 
 [[package]]
 name = "foregather-server"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "axum",
  "foregather-kit",
@@ -318,7 +318,7 @@ dependencies = [
 
 [[package]]
 name = "foregather-wasm"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "foregather-kit",
  "getrandom 0.2.17",

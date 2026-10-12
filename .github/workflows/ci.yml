@@ -3,6 +3,8 @@ on:
   push:
     branches: [main]
   pull_request:
+  schedule:
+    - cron: '23 7 * * 1'
   workflow_dispatch:
 permissions:
   contents: read
@@ -25,6 +27,8 @@ jobs:
             ~/.cargo/bin
             target
           key: ${{ runner.os }}-rust1941-bindgen0129-deny0190-audit0221-${{ hashFiles('Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-rust1941-bindgen0129-deny0190-audit0221-
       - run: command -v wasm-bindgen && wasm-bindgen --version | rg '^wasm-bindgen 0.2.129$' || cargo install wasm-bindgen-cli --version 0.2.129 --locked
       - run: npm ci
       - run: npx playwright install --with-deps chromium

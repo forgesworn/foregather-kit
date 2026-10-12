@@ -57,6 +57,6 @@ tests verify them without regeneration. The KithMoot vectors are copied unchange
 
 Do not change these derivations under v1. A new cipher, encoding, purpose or
 payload schema requires a new profile/version and vectors. Never downgrade to
-a legacy profile after an authentication failure. Live pairing will have its
+a legacy profile after an authentication failure. Live pairing has its
 own transcript and domain separation; this stored format provides no forward
 secrecy and must not be presented as a low-entropy short-code protocol.

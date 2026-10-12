@@ -1,6 +1,6 @@
 {
   "name": "@forgesworn/foregather-kit",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Portable invitation transfer, spoken verification and experimental live pairing in Rust/WASM",
   "type": "module",
   "license": "MIT",

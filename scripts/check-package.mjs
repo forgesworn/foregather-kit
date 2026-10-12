@@ -40,7 +40,9 @@ if(deriveSpokenWords({secret,context:'test',counter:0})!=='jazz earth glacier')t
 `;
   writeFileSync(join(dir,'check.mjs'),script);
   execFileSync(process.execPath,['check.mjs'],{cwd:dir,stdio:'pipe'});
+  copyFileSync(join(root,'tests/types/consumer.mts'),join(dir,'consumer.mts'));
+  execFileSync(process.execPath,[join(root,'node_modules/typescript/bin/tsc'),'--noEmit','--strict','--target','ES2022','--module','NodeNext','--lib','ES2022,DOM','consumer.mts'],{cwd:dir,stdio:'inherit'});
   const manifest=JSON.parse(readFileSync(join(dir,'node_modules/@forgesworn/foregather-kit/package.json')));
   assert.equal(manifest.license,'MIT');assert.equal(manifest.author,'TheCryptoDonkey');assert.equal(manifest.dependencies,undefined);
-  console.log(JSON.stringify({passed:true,isolatedTarballInstall:true,typesIncluded:true,licencesIncluded:true,packageBytes:packed.size,runtimeJsDependencies:0}));
+  console.log(JSON.stringify({passed:true,isolatedTarballInstall:true,typesIncluded:true,typeScriptConsumerCompiled:true,licencesIncluded:true,packageBytes:packed.size,runtimeJsDependencies:0}));
 } finally {rmSync(dir,{recursive:true,force:true});}

@@ -38,9 +38,9 @@ crates.io availability. Install the release tarball directly when the npm
 registry version is unavailable; its runtime assets are served by your own app.
 
 ```sh
-npm install https://github.com/forgesworn/foregather-kit/releases/download/v0.2.0/forgesworn-foregather-kit-0.2.0.tgz
+npm install https://github.com/forgesworn/foregather-kit/releases/download/v0.2.1/forgesworn-foregather-kit-0.2.1.tgz
 # Build the self-hosted resolver directly from the tagged source:
-cargo install --git https://github.com/forgesworn/foregather-kit --tag v0.2.0 --locked foregather-server
+cargo install --git https://github.com/forgesworn/foregather-kit --tag v0.2.1 --locked foregather-server
 ```
 
 Private security reports use
@@ -59,7 +59,8 @@ npx playwright install chromium
 npm run check
 ```
 
-`npm run check` runs formatting, Clippy, native tests, WASM generation,
+`npm run check` runs formatting, Clippy, native tests with and without live,
+Rustdoc checks and executable examples, WASM generation,
 Node/native/WebCrypto interoperability, real Chromium and a real resolver
 restart journey. `cargo audit` and `cargo deny check licenses sources` run the
 dependency checks. Tests use synthetic invitations and keys.
@@ -67,6 +68,9 @@ dependency checks. Tests use synthetic invitations and keys.
 ```sh
 # Optional read-only check against an existing KithMoot checkout's installed Fold.
 node scripts/check-kithmoot.mjs ../kithmoot
+
+# Install the browser tarball and compile its strict TypeScript consumer.
+node scripts/check-package.mjs
 
 # Build a distributable browser tarball without publishing it.
 npm pack ./packages/browser
@@ -242,3 +246,10 @@ MIT. Copyright (c) 2026 TheCryptoDonkey.
 Dependencies retain their own permissive licences and attribution; see
 [third-party notices](THIRD_PARTY_NOTICES.md). Foregather requires libraries,
 not external hosted products.
+
+## Documentation and contributing
+
+Use the [documentation index](docs/README.md) for protocols, self-hosting, APIs
+and validation limits. [Contributing](CONTRIBUTING.md) lists the required checks;
+[SUPPORT.md](SUPPORT.md) covers questions and [SECURITY.md](SECURITY.md) private reports.
+An optional [llms.txt](llms.txt) provides navigation for AI tools.

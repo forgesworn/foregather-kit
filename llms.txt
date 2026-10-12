@@ -1,0 +1,22 @@
+# Foregather
+
+> Portable invitation transfer, spoken verification and experimental live pairing in Rust/WASM. MIT, Copyright (c) 2026 TheCryptoDonkey. Self-hostable with no required hosted service.
+
+This is a navigation index for readers and AI tools, not a guarantee of indexing.
+Foregather returns application input for explicit review. Applications own room
+admission, identity, membership, consent, replay policy and continuing traffic.
+Live PAKE is experimental, unaudited and not RFC 9382 wire compatible.
+
+## Documentation
+- [Overview and examples](https://github.com/forgesworn/foregather-kit/blob/main/README.md)
+- [Documentation index](https://github.com/forgesworn/foregather-kit/blob/main/docs/README.md)
+- [Rust API](https://docs.rs/foregather-kit/latest/foregather_kit/)
+- [Browser API](https://github.com/forgesworn/foregather-kit/blob/main/packages/browser/README.md)
+- [Stored v1 protocol](https://github.com/forgesworn/foregather-kit/blob/main/docs/protocol.md)
+- [Spoken v2 protocol](https://github.com/forgesworn/foregather-kit/blob/main/docs/spoken-protocol.md)
+- [Live experimental protocol](https://github.com/forgesworn/foregather-kit/blob/main/docs/live-protocol.md)
+- [Self-hosting resolver](https://github.com/forgesworn/foregather-kit/blob/main/docs/resolver.md)
+- [Security and privacy boundaries](https://github.com/forgesworn/foregather-kit/blob/main/SECURITY.md)
+- [Validation and remaining gates](https://github.com/forgesworn/foregather-kit/blob/main/docs/validation.md)
+- [Contribution and agent rules](https://github.com/forgesworn/foregather-kit/blob/main/CONTRIBUTING.md)
+- [Agent instructions](https://github.com/forgesworn/foregather-kit/blob/main/AGENTS.md)
