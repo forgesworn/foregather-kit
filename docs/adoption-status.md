@@ -7,10 +7,10 @@ identity, admission, membership and continuing traffic encryption.
 
 | Requirement | Implementation | Required evidence |
 | --- | --- | --- |
-| Deployable live relay and optional client transport | Implemented; real HTTP, restart, quota/byte-budget, role, expiry, concurrency tests pass; systemd/container layouts present | Container runtime CI and public operator deployment remain separate |
+| Deployable live relay and optional client transport | Implemented; real HTTP, restart, quota/byte-budget, role, expiry, concurrency tests pass; systemd/container layouts and hosted container runtime pass | Public operator deployment remains separate |
 | Higher-level pairing API | Implemented; progress, cancellation, expiry, verification, fresh-code lifecycle and hostile transport checks pass | Installed strict TypeScript consumer passes |
 | QR and public handoff helpers | Implemented; shared native/browser parser, independent vectors, painted QR and simulated-camera cancellation/late-permission cleanup pass | Physical camera/mobile-browser acceptance remains open |
-| Swift/Kotlin bindings | Implemented; installed desktop consumers and actual archived packages pass on iOS 18.3 Simulator and Android 15/API 35 ARM64 emulator; Apple XCFramework and four-ABI Android AAR built | Physical phones and hosted native jobs remain separate |
+| Swift/Kotlin bindings | Implemented; hosted Linux/macOS foreign consumers and archived packages on iOS 18.3 Simulator and Android 15/API 35 ARM64 emulator pass; Apple XCFramework and four-ABI Android AAR built | Physical phones remain separate |
 | Encrypted delivery acknowledgement | Implemented; shared Rust framing, independent vectors, tamper/loss/retry and real relay receipt pass | Receipt means decryption, never review/admission |
 | Scoped creation grants | Implemented; resource/use/lifetime/expiry/revocation and restart/concurrent last-use checks pass | Applications retain user/tenant issuance policy |
 | Stored-only browser build | Implemented; isolated tarball, strict consumer, frozen vectors and browser-only loading pass; 460,134 bytes / 176,379 gzip versus 683,899 / 246,415 full | 28.4 percent smaller gzip; no live exports |
@@ -47,3 +47,20 @@ screenshots are retained in `target/native-mobile-evidence/{ios,android}.{json,p
 Builders/test fixtures remove owned temporary staging, databases and processes.
 Existing worktree targets are reused. Owned simulators and Android AVDs were
 stopped and deleted; the pre-existing KithMoot emulator was left untouched.
+
+## Distribution and hosted evidence
+
+[Foregather #17](https://github.com/forgesworn/foregather-kit/pull/17) and
+[Joystick #3](https://github.com/forgesworn/joystick/pull/3) merge the implementation.
+[Hosted functional/container/package checks](https://github.com/forgesworn/foregather-kit/actions/runs/38375938895),
+[Linux/macOS foreign consumers](https://github.com/forgesworn/foregather-kit/actions/runs/38375939299)
+and [Joystick CI](https://github.com/forgesworn/joystick/actions/runs/38375798123)
+passed against their implementation heads. Main and public asset verification
+are recorded in the release receipt.
+
+The [0.4.0 release](https://github.com/forgesworn/foregather-kit/releases/tag/v0.4.0)
+is the distribution destination for the browser tarball, Rust crate, resolver
+binaries, native archives, deployment layouts, licences, checksums and receipts.
+The GitHub tarball is installable without npm publisher authentication; registry
+availability is stated separately in the release notes. No public Foregather
+relay is selected or automatically deployed by installing these packages.
