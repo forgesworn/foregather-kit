@@ -19,7 +19,7 @@ hmac = "0.12"
 hkdf = { version = "0.12", optional = true }
 spake2 = { version = "=0.4.0", default-features = false, optional = true }
 curve25519-dalek = { version = "4", optional = true }
-aes-gcm = { version = "0.10.3", features = ["zeroize"] }
+aes-gcm = { version = "0.11.1", features = ["zeroize"] }
 base64.workspace = true
 serde.workspace = true
 serde_json.workspace = true
