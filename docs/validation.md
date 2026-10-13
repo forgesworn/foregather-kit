@@ -117,5 +117,7 @@ The documentation index, public Rustdoc (including live feature), browser guide,
 GitHub topics and optional llms.txt improve navigation. llms.txt does not guarantee
 AI indexing. CI builds the Rustdoc; docs.rs publication after registry release is
 a separate gate. Rust crates and GitHub assets are distributed separately from
-npm registry publication. The 0.4.0 browser package is available on npm;
-subsequent publications require publisher authentication and registry readback.
+npm registry publication. Browser 0.4.1 is available on npm; its
+[release receipt](https://github.com/forgesworn/foregather-kit/releases/download/v0.4.1/release-verification.json)
+records anonymous registry readback, matching hosted archive bytes and isolated
+consumer checks. Rust/native/relay components remain at 0.4.0.
