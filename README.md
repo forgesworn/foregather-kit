@@ -13,8 +13,13 @@ Version 0.4 adds a **durable optional live relay**, **scoped creation grants**,
 Spoken Token v2 words and experimental live PAKE bootstrap. Stored v1 bytes remain
 unchanged. Live pairing is an explicit Rust feature (`experimental-live`), uses
 a pinned, unaudited SPAKE2 implementation and needs independent review before
-production adoption. Physical-device qualification and production app migrations
-remain separate work. This project has not received an independent security review.
+production security claims. Joystick has deployed an experimental integration;
+physical-device qualification and other app migrations remain separate work.
+This project has not received an independent security review.
+
+The browser transport patch is 0.4.1. Rust crates, native packages and relay
+binaries remain at 0.4.0 with unchanged frozen profiles; component versions and
+publication receipts are identified separately in each release.
 
 ## Packages
 

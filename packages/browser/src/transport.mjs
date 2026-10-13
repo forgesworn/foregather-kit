@@ -70,6 +70,14 @@ export function delay(ms,signal) {
     signal?.addEventListener('abort',abort,{once:true});
   });
 }
+const transientReadFailure=error=>error instanceof TypeError||error?.kind==='timeout'||error?.kind==='http'&&[408,429,502,503,504].includes(error.status);
+async function retryRead(request,path,options) {
+  // A read retry owns no PAKE state: keep its path, capability and caller deadline.
+  for(let attempt=0;;attempt++) {
+    try{return await request('GET',path,options);}
+    catch(error){if(options.signal?.aborted||attempt>=2||!transientReadFailure(error))throw error;await delay(100*(attempt+1),options.signal);}
+  }
+}
 export function createCreationGrantClient(config) {
   const request=httpClient(config);
   return Object.freeze({
@@ -91,17 +99,18 @@ export function createLiveRelayClient(config) {
   };
   function transport({locator,role,capability}) {
     id(locator);token(capability);if(!['inviter','recipient'].includes(role))fail();
-    let disposed=false;
-    const alive=()=>{if(disposed)throw new ForegatherTransportError('cancelled');};
+    const lifetime=new AbortController();
+    const alive=()=>{if(lifetime.signal.aborted)throw new ForegatherTransportError('cancelled');};
+    const combined=signal=>signal?AbortSignal.any([signal,lifetime.signal]):lifetime.signal;
     return Object.freeze({
-      async send({kind:messageKind,sequence,value,signal}) {alive();const suffix=kind(messageKind,sequence),body=publicMessage(messageKind,sequence,value);await request('PUT',`live-sessions/${locator}/messages/${role}/${suffix}`,{body,capability,signal});alive();},
+      async send({kind:messageKind,sequence,value,signal}) {alive();const suffix=kind(messageKind,sequence),body=publicMessage(messageKind,sequence,value);await request('PUT',`live-sessions/${locator}/messages/${role}/${suffix}`,{body,capability,signal:combined(signal)});alive();},
       async receive({kind:messageKind,sequence,signal}) {
-        alive();const peer=role==='inviter'?'recipient':'inviter';
-        for(;;){signal?.throwIfAborted();alive();const value=await request('GET',`live-sessions/${locator}/messages/${peer}/${kind(messageKind,sequence)}`,{capability,signal,missing:true,json:true});
-          if(value!==undefined)return value;await delay(200,signal);
+        alive();signal=combined(signal);const peer=role==='inviter'?'recipient':'inviter',path=`live-sessions/${locator}/messages/${peer}/${kind(messageKind,sequence)}`;
+        for(;;){signal.throwIfAborted();alive();const value=await retryRead(request,path,{capability,signal,missing:true,json:true});
+          alive();if(value!==undefined)return publicMessage(messageKind,sequence,value);await delay(200,signal);
         }
       },
-      dispose(){disposed=true;},
+      dispose(){lifetime.abort(new ForegatherTransportError('cancelled'));},
     });
   }
   return Object.freeze({
@@ -116,7 +125,7 @@ export function createLiveRelayClient(config) {
     async lookup({roomCode,signal}) {
       // Public room lookup intentionally accepts no capability or access secret.
       if(typeof roomCode!=='string'||!/^[0-9A-HJKMNP-TV-Z]{6}$/.test(roomCode))fail();
-      const room=await request('GET',`live-sessions/rooms/${roomCode}`,{signal,json:true});
+      const room=await retryRead(request,`live-sessions/rooms/${roomCode}`,{signal,json:true});
       return publicRoom(room);
     },
     inviter({allocation}) {return transport({locator:allocation.room.session.locator,role:'inviter',capability:allocation.inviter_token});},

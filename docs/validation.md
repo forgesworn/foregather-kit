@@ -1,5 +1,15 @@
 # Validation evidence
 
+## Browser 0.4.1 transport hardening — 2026-10-13
+
+The browser transport recovers transient HTTP/network read failures with three
+attempts and bounded backoff. Twenty focused flow/transport tests and 56 Node
+tests pass, including real HTTP pairing with one original claim/hello/proof per
+endpoint, unchanged encrypted sequence zero, expiry, cancellation and disposal.
+Authentication failures and malformed peer messages remain terminal. Rust,
+native bindings, relay binaries and frozen wire/vector files are unchanged from
+0.4.0; browser publication is recorded separately in the 0.4.1 release receipt.
+
 ## 0.4.0 adoption additions — 2026-10-13
 
 The seven additions and optional Joystick SDK integration are implemented and
@@ -57,22 +67,28 @@ This record describes the local validation run. Current hosted CI evidence is
 on [GitHub Actions](https://github.com/forgesworn/foregather-kit/actions); public
 distribution status and asset checksums are on the
 [release page](https://github.com/forgesworn/foregather-kit/releases). Registry
-publication is a separate gate from tarball/package compilation. No production
-resolver/domain/live relay has been deployed. Joystick has optional, tested SDK
-transfer adapters; its production UI, Covey and KithMoot have not been migrated. Application
+publication is a separate gate from tarball/package compilation. Joystick's
+experimental gateway is deployed at
+`https://controller.pallasite.app/foregather/`, with a private loopback Rust relay,
+operator-owned creation capability and application budgets. Tank, Quiz, Tilt
+and Joystick Pad have adopted explicit comparison/transfer/review screens, with
+public browser input, reconnect and refresh checks. Covey and KithMoot remain
+unmigrated. Application
 admission, host/controller authority and continuing traffic encryption remain
 owned by their existing protocols.
 
 Live pairing is experimental. RustCrypto spake2 0.4.0 is unaudited, uses its own
 profile rather than RFC 9382 wire bytes, and does not erase all internal secret
 copies. Foregather has no independent PAKE/composition/security review. The
-durable Rust relay is deployable; its test/demo gateways run on loopback. Do not interpret the tests
+durable Rust relay and Joystick pilot are deployed; bundled demonstration
+gateways remain on loopback. Do not interpret the tests
 or advisory scans as production security acceptance.
 
 Swift/Kotlin packages, desktop foreign consumers and phone-emulator execution
 are implemented and tested.
-Physical phones, external networks, recovery/load testing,
-coverage-guided fuzzing and production relay qualification remain open.
+Physical phones, sustained production load, coverage-guided fuzzing and
+independent deployment/security qualification remain open. Joystick's public
+browser pairing/input/recovery checks provide hosted pilot evidence.
 Stored mode has no forward-secrecy, anonymity or guaranteed-deletion claim.
 No deterministic process-memory erasure is claimed for either mode.
 
@@ -101,4 +117,5 @@ The documentation index, public Rustdoc (including live feature), browser guide,
 GitHub topics and optional llms.txt improve navigation. llms.txt does not guarantee
 AI indexing. CI builds the Rustdoc; docs.rs publication after registry release is
 a separate gate. Rust crates and GitHub assets are distributed separately from
-npm registry publication, which still requires publisher authentication.
+npm registry publication. The 0.4.0 browser package is available on npm;
+subsequent publications require publisher authentication and registry readback.

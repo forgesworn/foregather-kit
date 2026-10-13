@@ -1,5 +1,18 @@
 # Changelog
 
+## Browser 0.4.1 - 2026-10-13
+
+* Retry transient directory/poll reads at most twice without recreating pairing
+  gates, changing capabilities/counters or extending the original deadline.
+* Abort in-flight transport work and backoff on cancellation/disposal; validate
+  peer message schema before returning it. Authentication and malformed replies
+  remain terminal.
+* Add end-to-end HTTP flow regressions for transient reads, persistent failures,
+  cancellation, disposal, expiry and unchanged encrypted sequence zero.
+* Refresh public Joystick adoption and distribution evidence. Rust, native
+  bindings, relay binaries and frozen profiles remain at their 0.4.0 release.
+  This patch contains only the browser package, licences and provenance.
+
 ## 0.4.0 - 2026-10-13 (experimental adoption APIs)
 
 * Add a durable optional live relay with endpoint capabilities, fixed expiry,

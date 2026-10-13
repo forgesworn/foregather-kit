@@ -7,14 +7,14 @@ identity, admission, membership and continuing traffic encryption.
 
 | Requirement | Implementation | Required evidence |
 | --- | --- | --- |
-| Deployable live relay and optional client transport | Implemented; real HTTP, restart, quota/byte-budget, role, expiry, concurrency tests pass; systemd/container layouts and hosted container runtime pass | Public operator deployment remains separate |
+| Deployable live relay and optional client transport | Implemented; real HTTP, restart, quota/byte-budget, role, expiry, concurrency tests pass; systemd/container layouts and hosted container runtime pass; Joystick pilot gateway deployed | Sustained public load and independent qualification remain open |
 | Higher-level pairing API | Implemented; progress, cancellation, expiry, verification, fresh-code lifecycle and hostile transport checks pass | Installed strict TypeScript consumer passes |
 | QR and public handoff helpers | Implemented; shared native/browser parser, independent vectors, painted QR and simulated-camera cancellation/late-permission cleanup pass | Physical camera/mobile-browser acceptance remains open |
 | Swift/Kotlin bindings | Implemented; hosted Linux/macOS foreign consumers and archived packages on iOS 18.3 Simulator and Android 15/API 35 ARM64 emulator pass; Apple XCFramework and four-ABI Android AAR built | Physical phones remain separate |
 | Encrypted delivery acknowledgement | Implemented; shared Rust framing, independent vectors, tamper/loss/retry and real relay receipt pass | Receipt means decryption, never review/admission |
 | Scoped creation grants | Implemented; resource/use/lifetime/expiry/revocation and restart/concurrent last-use checks pass | Applications retain user/tenant issuance policy |
 | Stored-only browser build | Implemented; isolated tarball, strict consumer, frozen vectors and browser-only loading pass; 460,134 bytes / 176,379 gzip versus 683,899 / 246,415 full | 28.4 percent smaller gzip; no live exports |
-| Joystick integration | Implemented optional SDK transfer/review adapters; actual two-browser Rust-relay/broker/game-input journey passes; existing SDK/broker/pad regressions pass | Production UI migration/traffic encryption and physical acceptance remain app-owned |
+| Joystick integration | SDK adapters and public Tank/Quiz/Tilt/Pad pairing UI deployed; explicit review, actual broker input, reconnect and refresh journeys pass | Continuing traffic encryption and physical acceptance remain app-owned |
 
 
 Local automated checks, hosted CI, publication, physical devices and independent
@@ -62,5 +62,9 @@ The [0.4.0 release](https://github.com/forgesworn/foregather-kit/releases/tag/v0
 is the distribution destination for the browser tarball, Rust crate, resolver
 binaries, native archives, deployment layouts, licences, checksums and receipts.
 The GitHub tarball is installable without npm publisher authentication; registry
-availability is stated separately in the release notes. No public Foregather
-relay is selected or automatically deployed by installing these packages.
+availability is stated separately in the release notes. The browser 0.4.0 npm
+publication has been verified against the exact released tarball. Joystick
+operates an explicit experimental gateway at
+`https://controller.pallasite.app/foregather/`; installing Foregather selects and
+deploys no relay automatically. Browser 0.4.1 adds transport read recovery while
+Rust/native/relay 0.4.0 and frozen profiles remain unchanged.
