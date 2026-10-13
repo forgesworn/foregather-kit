@@ -34,21 +34,21 @@ room. Fold, Covey and other application protocols retain those responsibilities.
 Source and tagged experimental releases live at
 [forgesworn/foregather-kit](https://github.com/forgesworn/foregather-kit).
 [Release assets](https://github.com/forgesworn/foregather-kit/releases) include a
-browser tarball, native Rust crate, Linux resolver binary, licence texts,
+browser tarball, native Rust crate, Linux resolver binary, Swift/Kotlin archives,
+deployment layouts, licence texts,
 SHA-256 checksums and build provenance. Assets ship after hosted verification.
 Registry publication is a separate gate; consult the release notes for npm and
 crates.io availability. Install the release tarball directly when the npm
 registry version is unavailable; its runtime assets are served by your own app.
 
-The new 0.4 adoption APIs require this source build or a matching published 0.4
-asset. The last published 0.3.1 commands below cover the earlier APIs. To install
-the current checkout locally, run `npm pack ./packages/browser` and install the
-resulting `forgesworn-foregather-kit-0.4.0.tgz` in your app.
+The 0.4 adoption APIs require version 0.4.0. Install the matching experimental
+release below, or run `npm pack ./packages/browser` in a source checkout and
+install the resulting `forgesworn-foregather-kit-0.4.0.tgz` in your app.
 
 ```sh
-npm install https://github.com/forgesworn/foregather-kit/releases/download/v0.3.1/forgesworn-foregather-kit-0.3.1.tgz
+npm install https://github.com/forgesworn/foregather-kit/releases/download/v0.4.0/forgesworn-foregather-kit-0.4.0.tgz
 # Build the self-hosted resolver directly from the tagged source:
-cargo install --git https://github.com/forgesworn/foregather-kit --tag v0.3.1 --locked foregather-server
+cargo install --git https://github.com/forgesworn/foregather-kit --tag v0.4.0 --locked foregather-server
 ```
 
 Private security reports use
