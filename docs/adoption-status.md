@@ -67,4 +67,7 @@ publication has been verified against the exact released tarball. Joystick
 operates an explicit experimental gateway at
 `https://controller.pallasite.app/foregather/`; installing Foregather selects and
 deploys no relay automatically. Browser 0.4.1 adds transport read recovery while
-Rust/native/relay 0.4.0 and frozen profiles remain unchanged.
+Rust/native/relay 0.4.0 and frozen profiles remain unchanged. The
+[0.4.1 release receipt](https://github.com/forgesworn/foregather-kit/releases/download/v0.4.1/release-verification.json)
+records merged-head CI, anonymous npm readback, matching archive bytes and an
+isolated installation of the downloaded registry package.

@@ -46,12 +46,16 @@ Registry publication is a separate gate; consult the release notes for npm and
 crates.io availability. Install the release tarball directly when the npm
 registry version is unavailable; its runtime assets are served by your own app.
 
-The 0.4 adoption APIs require version 0.4.0. Install the matching experimental
-release below, or run `npm pack ./packages/browser` in a source checkout and
-install the resulting `forgesworn-foregather-kit-0.4.0.tgz` in your app.
+The adoption APIs require at least 0.4.0. Use browser 0.4.1 for bounded transport
+read recovery. Its npm tarball has been downloaded anonymously and verified
+against the [0.4.1 release](https://github.com/forgesworn/foregather-kit/releases/tag/v0.4.1)
+and isolated consumer checks. Rust/server/native components remain at 0.4.0.
+Run `npm pack ./packages/browser` to package a source checkout locally.
 
 ```sh
-npm install https://github.com/forgesworn/foregather-kit/releases/download/v0.4.0/forgesworn-foregather-kit-0.4.0.tgz
+npm install @forgesworn/foregather-kit@0.4.1
+# Or install the exact GitHub browser archive:
+# npm install https://github.com/forgesworn/foregather-kit/releases/download/v0.4.1/forgesworn-foregather-kit-0.4.1.tgz
 # Build the self-hosted resolver directly from the tagged source:
 cargo install --git https://github.com/forgesworn/foregather-kit --tag v0.4.0 --locked foregather-server
 ```
