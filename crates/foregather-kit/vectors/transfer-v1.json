@@ -1,0 +1,25 @@
+{
+  "profile": "foregather-transfer/1",
+  "syntheticOnly": true,
+  "generatedBy": "Independent Python hashlib SHA-256 and byte framing",
+  "vectors": [
+    {
+      "name": "empty",
+      "payload": "",
+      "frame": "RkcBAQABAgMEBQYHCAkKCwwNDg8",
+      "receipt": "RkcBAgABAgMEBQYHCAkKCwwNDg_jsMRCmPwcFJr79MiZb7kkJ65B5GSbk0yklZkbeFK4VQ"
+    },
+    {
+      "name": "binary",
+      "payload": "AP8BgA",
+      "frame": "RkcBAQABAgMEBQYHCAkKCwwNDg8A_wGA",
+      "receipt": "RkcBAgABAgMEBQYHCAkKCwwNDg_tyB9-TuNY-5HpS9m9dAecPcujb0DyyKNueuBWev7Mjw"
+    },
+    {
+      "name": "unicode",
+      "payload": "c3ludGhldGljIGludml0YXRpb24g8J-rjw",
+      "frame": "RkcBAQABAgMEBQYHCAkKCwwNDg9zeW50aGV0aWMgaW52aXRhdGlvbiDwn6uP",
+      "receipt": "RkcBAgABAgMEBQYHCAkKCwwNDg8zS1VvzPLFcsIyfmkhJJ_IlA77eABjsEjkZOG4NLDn_w"
+    }
+  ]
+}

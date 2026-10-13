@@ -7,12 +7,14 @@ with a WASM browser package and an optional self-hosted ciphertext resolver.
 It works without a ForgeSworn account, hosted endpoint or third-party product.
 Applications choose their infrastructure and retain control of admission.
 
-Version 0.2 implements **stored invitation transfer**, **Spoken Token v2 word
-compatibility** and **experimental live PAKE bootstrap**. Stored v1 bytes remain
+Version 0.4 adds a **durable optional live relay**, **scoped creation grants**,
+**pairing flows with encrypted decryption receipts**, **public QR handoff**,
+**Swift/Kotlin packages** and a **stored-only browser entry** to stored invitations,
+Spoken Token v2 words and experimental live PAKE bootstrap. Stored v1 bytes remain
 unchanged. Live pairing is an explicit Rust feature (`experimental-live`), uses
 a pinned, unaudited SPAKE2 implementation and needs independent review before
-production adoption. Swift/Kotlin bindings and app migrations remain subsequent
-work. This project has not received an independent security review.
+production adoption. Physical-device qualification and production app migrations
+remain separate work. This project has not received an independent security review.
 
 ## Packages
 
@@ -21,6 +23,7 @@ work. This project has not received an independent security review.
 | `foregather-kit` | Pure Rust envelope, spoken and optional live operations, explicit clock and CSPRNG, typed public locator and secret invitation |
 | `@forgesworn/foregather-kit` | WASM implementation, TypeScript declarations, optional explicit HTTP client |
 | `foregather-server` | Bounded SQLite ciphertext storage, upload/delete capabilities and durable creation budget |
+| `foregather-ffi` | Generated Swift/Kotlin stored/spoken and explicitly enabled live APIs |
 
 Opening an envelope returns application input for review. It does not establish
 identity, validate a room authority, create membership, enrol a device or rekey a
@@ -36,6 +39,11 @@ SHA-256 checksums and build provenance. Assets ship after hosted verification.
 Registry publication is a separate gate; consult the release notes for npm and
 crates.io availability. Install the release tarball directly when the npm
 registry version is unavailable; its runtime assets are served by your own app.
+
+The new 0.4 adoption APIs require this source build or a matching published 0.4
+asset. The last published 0.3.1 commands below cover the earlier APIs. To install
+the current checkout locally, run `npm pack ./packages/browser` and install the
+resulting `forgesworn-foregather-kit-0.4.0.tgz` in your app.
 
 ```sh
 npm install https://github.com/forgesworn/foregather-kit/releases/download/v0.3.1/forgesworn-foregather-kit-0.3.1.tgz
@@ -124,6 +132,45 @@ initialisation loads the WASM asset beside the generated module. Serving those
 assets requires `application/wasm` for the WASM file.
 
 ## Live pairing and spoken words
+
+For the reusable flow and real Rust relay, run `npm run demo:pairing`. It supports
+public QR links, separate private words/characters, explicit verification and an
+encrypted recipient-decrypted receipt. See [live relay](docs/live-relay.md),
+[public handoff](docs/public-handoff.md) and [receipt framing](docs/transfer-protocol.md).
+The lower-level demo below remains a compatible, loopback transport example.
+
+Stored-only consumers can load a separate smaller WASM module:
+
+```js
+import { init, createStoredCodec } from '@forgesworn/foregather-kit/stored';
+await init();
+// Stored/spoken/live package entry selection does not change stored v1 bytes.
+```
+
+The `/stored` entry exports stored codecs, the explicit resolver client and
+creation-grant client. It exposes no live or spoken functions. The optional
+`/qr` entry bundles local generation/decoding; it loads no hosted runtime code.
+The full entry exports `createPairingFlow`, `createLiveRelayClient`,
+`createCreationGrantClient`, `createPairingLink` and `parsePairingLink`.
+
+```js
+const flow = createPairingFlow({ ...offer, namespace: 'example.rooms',
+  purpose: 'invitation', role: 'inviter', now: currentTime, transport,
+  onState: ({state}) => showPairingState(state) });
+const words = await flow.pair({signal});
+// Show/compare words. Only an explicit user acceptance reaches this step.
+flow.verify({matches: true});
+const receipt = await flow.send({payload: invitationBytes, signal});
+// receipt.decrypted means exact-byte decryption, not review or admission.
+flow.dispose();
+```
+
+Recipients call `receive()` after their own explicit verification. Application
+validation, review, admission and continuing traffic encryption remain separate.
+Failure/cancellation/expiry is terminal: start again with a fresh offer rather
+than recreating a gate for the old secret. The checked optional Joystick SDK
+adapters preserve its host authorisation, parser and explicit controller review;
+run `npm run test:joystick -- /your/built/joystick` for the real two-browser journey.
 
 Run `npm run demo:live` and open `http://127.0.0.1:8789`. Choose words or
 characters and create a pairing. On another client, enter the public room code
@@ -219,7 +266,8 @@ let candidate = open(&profile, &parsed, &envelope.to_json()?, now)?;
 
 The core does not read the wall clock or initiate I/O. Callers supply trusted
 entropy and time. Native apps can use the Rust API directly; generated mobile
-FFI packages are not present yet.
+FFI packages are built with `node scripts/build-native.mjs apple` or `android`.
+See [native packaging and qualification](docs/native.md).
 
 ## KithMoot compatibility
 
@@ -261,6 +309,10 @@ Configure `FOREGATHER_BIND`, `FOREGATHER_DB`, `FOREGATHER_MAX_RECORDS`, and
 HTTPS gateway with connection/header limits and disable capability-bearing
 request logs. Use a dedicated private storage directory. The server defaults
 to loopback HTTP; client HTTP support requires explicit loopback opt-in.
+Limited [creation grants](docs/creation-grants.md) can delegate creation without
+sharing operator authority. `FOREGATHER_ENABLE_LIVE=1` explicitly enables the
+durable experimental relay; [deployment examples](deploy/README.md) cover systemd
+and a prebuilt-Linux-binary container.
 
 For an interactive local example, run `npm run demo` in a second terminal with
 the same creation token environment. Open `http://127.0.0.1:8788`, create a link,
@@ -276,7 +328,7 @@ See [resolver API](docs/resolver.md), [wire protocol](docs/protocol.md),
 ## Licence
 
 MIT. Copyright (c) 2026 TheCryptoDonkey.
-Dependencies retain their own permissive licences and attribution; see
+Dependencies retain their own licences and attribution; see
 [third-party notices](THIRD_PARTY_NOTICES.md). Foregather requires libraries,
 not external hosted products.
 

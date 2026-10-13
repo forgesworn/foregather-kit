@@ -14,6 +14,8 @@ try {
     copyFileSync(archive,join(dir,filename));packed={filename,files,size:statSync(archive).size};
   } else packed=JSON.parse(execFileSync('npm',['pack','./packages/browser','--json','--pack-destination',dir],{cwd:root,encoding:'utf8'}))[0];
   assert.ok(packed.files.some(f=>f.path==='dist/foregather_wasm_bg.wasm'));
+  assert.ok(packed.files.some(f=>f.path==='dist/foregather_stored_bg.wasm'));
+  assert.ok(packed.files.some(f=>f.path==='dist/qr.mjs'));
   assert.ok(packed.files.some(f=>f.path==='dist/index.d.ts'));
   assert.ok(packed.files.some(f=>f.path==='THIRD_PARTY_LICENSES.txt'));
   writeFileSync(join(dir,'package.json'),JSON.stringify({type:'module',private:true}));
@@ -50,6 +52,16 @@ if(formatCharacterCode('DFVSJX')!=='DFV-SJX')throw Error('Installed grouping fai
 if(accessSecretOdds({format:'characters',count:6}).possibilities!==1073741824n)throw Error('Installed odds failed');
 const secret=new Uint8Array(32);secret[31]=1;
 if(deriveSpokenWords({secret,context:'test',counter:0})!=='jazz earth glacier')throw Error('Installed spoken mismatch');
+const stored=await import('@forgesworn/foregather-kit/stored');
+await stored.init({module_or_path:readFileSync('node_modules/@forgesworn/foregather-kit/dist/foregather_stored_bg.wasm')});
+if('createLiveOffer' in stored)throw Error('Stored entry exposed live API');
+const smallCodec=stored.createStoredCodec({namespace:'installed.example',baseUrl:'https://resolver.example/i/'});
+if(new TextDecoder().decode(smallCodec.open({url:sealed.url,envelope:JSON.stringify(sealed.envelope),now}))!=='installed package')throw Error('Stored-only installed module failed');
+const root=await import('@forgesworn/foregather-kit');const qrModule=await import('@forgesworn/foregather-kit/qr');
+const cfg={baseUrl:'https://example.test/pair/',namespace:'installed.example',purpose:'bootstrap',now},room={session:offer.session,secret_format:'words'};
+const link=root.createPairingLink({...cfg,room});if(root.parsePairingLink({...cfg,url:link}).session.locator!==offer.session.locator)throw Error('Installed handoff failed');
+const qr=qrModule.createPairingQr({...cfg,room});if(qrModule.decodePairingQr({...cfg,rgba:qr.rgba,width:qr.width,height:qr.height}).session.locator!==offer.session.locator)throw Error('Installed QR failed');
+for(const name of ['createPairingFlow','createLiveRelayClient','createCreationGrantClient'])if(typeof root[name]!=='function')throw Error('Missing installed adoption API');
 `;
   writeFileSync(join(dir,'check.mjs'),script);
   execFileSync(process.execPath,['check.mjs'],{cwd:dir,stdio:'pipe'});
@@ -57,5 +69,5 @@ if(deriveSpokenWords({secret,context:'test',counter:0})!=='jazz earth glacier')t
   execFileSync(process.execPath,[join(root,'node_modules/typescript/bin/tsc'),'--noEmit','--strict','--target','ES2022','--module','NodeNext','--lib','ES2022,DOM','consumer.mts'],{cwd:dir,stdio:'inherit'});
   const manifest=JSON.parse(readFileSync(join(dir,'node_modules/@forgesworn/foregather-kit/package.json')));
   assert.equal(manifest.license,'MIT');assert.equal(manifest.author,'TheCryptoDonkey');assert.equal(manifest.dependencies,undefined);
-  console.log(JSON.stringify({passed:true,isolatedTarballInstall:true,typesIncluded:true,typeScriptConsumerCompiled:true,licencesIncluded:true,packageBytes:packed.size,runtimeJsDependencies:0}));
+  console.log(JSON.stringify({passed:true,isolatedTarballInstall:true,typesIncluded:true,typeScriptConsumerCompiled:true,licencesIncluded:true,storedOnlyAndQrEntries:true,packageBytes:packed.size,runtimeJsDependencies:0}));
 } finally {rmSync(dir,{recursive:true,force:true});}

@@ -9,11 +9,19 @@
     "test:resolver": "node scripts/check-resolver.mjs",
     "test:demo": "node scripts/check-demo.mjs",
     "demo": "node examples/browser/serve.mjs",
-    "check": "cargo fmt --all --check && cargo clippy --workspace --all-targets --all-features -- -D warnings && cargo test --locked --workspace --all-features && cargo test --locked -p foregather-kit --no-default-features && RUSTDOCFLAGS=\"-D warnings\" cargo doc --locked --workspace --all-features --no-deps && cargo build --locked -p foregather-server && cargo build --locked -p foregather-kit --example codec && cargo build --locked -p foregather-kit --features experimental-live --example live-peer && npm run build && npm test && npm run test:browser && npm run test:resolver && npm run test:demo && npm run test:live",
+    "check": "cargo fmt --all --check && cargo clippy --workspace --all-targets --all-features -- -D warnings && cargo test --locked --workspace --all-features && cargo test --locked -p foregather-kit --no-default-features && RUSTDOCFLAGS=\"-D warnings\" cargo doc --locked --workspace --all-features --no-deps && cargo build --locked -p foregather-server && cargo build --locked -p foregather-kit --example codec && cargo build --locked -p foregather-kit --features experimental-live --example live-peer && npm run build && npm test && npm run test:browser && npm run test:resolver && npm run test:demo && npm run test:live && npm run test:relay && npm run test:pairing",
     "test:live": "node scripts/check-live-demo.mjs",
-    "demo:live": "node examples/live/serve.mjs"
+    "demo:live": "node examples/live/serve.mjs",
+    "test:relay": "node scripts/check-live-relay.mjs",
+    "test:pairing": "node scripts/check-pairing-demo.mjs",
+    "test:native": "node scripts/build-native.mjs check",
+    "demo:pairing": "node examples/pairing/serve.mjs",
+    "test:joystick": "node scripts/check-joystick.mjs",
+    "test:ios": "node scripts/check-native-mobile.mjs ios",
+    "test:android": "node scripts/check-native-mobile.mjs android"
   },
   "devDependencies": {
+    "jsqr": "1.4.0",
     "playwright": "1.62.1",
     "typescript": "5.9.3"
   }

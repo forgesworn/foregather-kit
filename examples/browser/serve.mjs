@@ -7,7 +7,7 @@ const upstream=new URL(process.env.FOREGATHER_RESOLVER_URL??'http://127.0.0.1:87
 if(upstream.protocol!=='http:'||!['127.0.0.1','localhost','[::1]'].includes(upstream.hostname)||upstream.username||upstream.password||upstream.search||upstream.hash||upstream.pathname!=='/')throw Error('Demo resolver must be loopback HTTP');
 const files=new Map([
   ['/demo.mjs',new URL('demo.mjs',import.meta.url)],
-  ...['index.mjs','foregather_wasm.js','foregather_wasm_bg.wasm'].map(name=>[`/pkg/${name}`,new URL(`../../packages/browser/dist/${name}`,import.meta.url)]),
+  ...['index.mjs','foregather_wasm.js','foregather_wasm_bg.wasm','stored-api.mjs','resolver.mjs','transport.mjs','flow.mjs','handoff.mjs','qr.mjs','qrcodegen.mjs','jsqr.mjs','stored.mjs','foregather_stored.js','foregather_stored_bg.wasm'].map(name=>[`/pkg/${name}`,new URL(`../../packages/browser/dist/${name}`,import.meta.url)]),
 ]);
 let origin;
 const server=createServer(async(req,res)=>{

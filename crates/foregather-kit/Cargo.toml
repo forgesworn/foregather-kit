@@ -13,6 +13,7 @@ keywords = ["invitations", "pairing", "privacy", "wasm", "spake2"]
 readme = "../../README.md"
 
 [dependencies]
+subtle.workspace = true
 sha2.workspace = true
 hmac = "0.12"
 hkdf = { version = "0.12", optional = true }

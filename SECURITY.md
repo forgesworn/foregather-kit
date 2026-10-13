@@ -53,8 +53,9 @@ handoff. Endpoints spend attempts on start, including cancellations. Keep one
 gate per code, dispose it after success and never recreate it for the same code.
 Relay quotas are not the password guessing boundary. A malicious relay can
 exhaust budgets and deny delivery. App-owned transport must bound streams and
-must not log codes, capabilities or plaintext. The bundled relay is a loopback
-demonstration, not a production live service.
+must not log codes, capabilities or plaintext. Version 0.4 adds an optional durable Rust relay and explicit HTTP transport.
+Its composition and public deployment still require independent qualification.
+Bundled demonstration gateways remain loopback-only.
 
 Owned Foregather secrets/keys are zeroized, but upstream SPAKE2 Password, scalar
 and internal state copies do not all zeroize on drop. JavaScript strings and
@@ -111,3 +112,31 @@ Do not put live keys, invitation URLs, management capabilities or private-room
 contents in public issues. Use [GitHub private vulnerability reporting](https://github.com/forgesworn/foregather-kit/security/advisories/new)
 to coordinate sensitive reports with the project maintainer, TheCryptoDonkey. Public vulnerability reports should use
 synthetic reproductions. Private vulnerability reporting is enabled on the public repository.
+
+
+## Adoption adapters and native bindings (0.4)
+
+Public handoff links use a distinct versioned public-only schema and check the
+application-selected origin/path/context/time before returning metadata. QR
+rendering/decoding occurs locally. Explicit camera operations release tracks on
+success/cancellation/failure; physical browser/device acceptance is separate.
+
+Pairing flows require explicit verification acceptance before their versioned
+invitation frame/receipt. A receipt authenticates recipient decryption of exact
+bytes through the confirmed channel, not human consent, named identity or room
+admission. App validators and review remain mandatory. Transport retries reuse
+identical ciphertext or claim capabilities; they never reconstruct gates or
+reset counters/budgets. Failed or expired flows cannot restart.
+
+The durable relay stores public messages/ciphertext and purpose-separated
+capability hashes. Role-specific write authority, fixed expiry, write-once retry,
+shared storage/creation/byte limits and lookup budgets do not provide anonymity,
+guaranteed delivery/deletion or independent security acceptance. Creation grants
+scope future allocation, not a person or encrypted application namespace.
+
+UniFFI native adapters use platform CSPRNG and caller time. Foreign references
+share one Rust state; disposal releases owned state but foreign/generated string
+and buffer copies may remain. Unmodified UniFFI runtime retains MPL-2.0 and its
+notices/source attribution are bundled. No native deterministic erasure claim is
+made. Physical phones, public gateway/load qualification and independent review
+remain open before production security claims.

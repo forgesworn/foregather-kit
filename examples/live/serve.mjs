@@ -8,7 +8,7 @@ let lookupWindow=0,lookups=0;
 const files=new Map([
   ['/live.mjs',new URL('live.mjs',import.meta.url)],
   ['/live.css',new URL('live.css',import.meta.url)],
-  ...['index.mjs','foregather_wasm.js','foregather_wasm_bg.wasm'].map(name=>[`/pkg/${name}`,new URL(`../../packages/browser/dist/${name}`,import.meta.url)]),
+  ...['index.mjs','foregather_wasm.js','foregather_wasm_bg.wasm','stored-api.mjs','resolver.mjs','transport.mjs','flow.mjs','handoff.mjs','qr.mjs','qrcodegen.mjs','jsqr.mjs','stored.mjs','foregather_stored.js','foregather_stored_bg.wasm'].map(name=>[`/pkg/${name}`,new URL(`../../packages/browser/dist/${name}`,import.meta.url)]),
 ]);
 const server=createServer(async(req,res)=>{
   for(const [k,v] of [['Cache-Control','no-store'],['Referrer-Policy','no-referrer'],['X-Content-Type-Options','nosniff'],['Content-Security-Policy',"default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'"]])res.setHeader(k,v);

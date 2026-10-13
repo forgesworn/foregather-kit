@@ -1,4 +1,18 @@
-# Local validation — 2026-10-12, v0.3.0
+# Validation evidence
+
+## 0.4.0 adoption additions — 2026-10-13
+
+The seven additions and optional Joystick SDK integration are implemented and
+locally qualified. See [adoption status](adoption-status.md) for requirement-level
+proof, exact commands, artifact checksums and remaining gates. Local functional
+checks cover 92 Rust/Node tests and three Rustdoc examples, actual browser/service
+journeys, installed TypeScript/Swift/Kotlin consumers and native cross-compilation.
+The actual native archives also passed on iOS 18.3 Simulator and Android 15/API 35
+ARM64 emulator, including callback marshalling, pairing, receipts and replay.
+Physical phones, public deployments, publication and independent review remain
+separate claims. The historical 0.3 run below describes that earlier version.
+
+## Historical local validation — 2026-10-12, v0.3.0
 
 Environment: macOS ARM64, Rust 1.94.1, Node 24.21.0, Python 3.14,
 wasm-bindgen 0.2.129, Playwright Chromium 151.0.7922.34.
@@ -37,24 +51,27 @@ guarantee. Live PAKE increases
 the browser build versus stored-only v0.1. Native stored consumers leave the
 experimental-live feature disabled and do not compile its curve/PAKE dependencies.
 
-## Remaining gates
+## Remaining qualification gates for 0.4
 
 This record describes the local validation run. Current hosted CI evidence is
 on [GitHub Actions](https://github.com/forgesworn/foregather-kit/actions); public
 distribution status and asset checksums are on the
 [release page](https://github.com/forgesworn/foregather-kit/releases). Registry
 publication is a separate gate from tarball/package compilation. No production
-resolver/domain/live relay has been deployed. Joystick, Covey and KithMoot have not been migrated; application
+resolver/domain/live relay has been deployed. Joystick has optional, tested SDK
+transfer adapters; its production UI, Covey and KithMoot have not been migrated. Application
 admission, host/controller authority and continuing traffic encryption remain
 owned by their existing protocols.
 
 Live pairing is experimental. RustCrypto spake2 0.4.0 is unaudited, uses its own
 profile rather than RFC 9382 wire bytes, and does not erase all internal secret
 copies. Foregather has no independent PAKE/composition/security review. The
-bundled live relay is loopback demo infrastructure. Do not interpret the tests
+durable Rust relay is deployable; its test/demo gateways run on loopback. Do not interpret the tests
 or advisory scans as production security acceptance.
 
-Swift/Kotlin FFI, physical phones, external networks, recovery/load testing,
+Swift/Kotlin packages, desktop foreign consumers and phone-emulator execution
+are implemented and tested.
+Physical phones, external networks, recovery/load testing,
 coverage-guided fuzzing and production relay qualification remain open.
 Stored mode has no forward-secrecy, anonymity or guaranteed-deletion claim.
 No deterministic process-memory erasure is claimed for either mode.

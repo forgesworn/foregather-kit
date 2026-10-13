@@ -44,6 +44,13 @@ jobs:
       - run: |
           [[ "$(cargo audit --version 2>/dev/null)" == *' 0.22.1' ]] || cargo install cargo-audit --version 0.22.1 --locked --force
       - run: cargo audit
+      - name: Container packaging and runtime
+        env:
+          FOREGATHER_ENABLE_LIVE: '1'
+        run: |
+          cargo build --locked --release -p foregather-server
+          docker build -f deploy/Dockerfile -t foregather-check .
+          node scripts/check-container.mjs
       - run: node scripts/package-release.mjs
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:

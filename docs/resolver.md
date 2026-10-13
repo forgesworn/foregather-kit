@@ -23,8 +23,8 @@ encrypted content. It accepts either wire profile without seeing a namespace.
 
 Creation is intentionally permissioned in v0.1 and v0.2. The operator token is suitable
 for a trusted backend or local operator, not embedding in a public app bundle.
-An app wishing to permit ordinary users to create invitations needs its own
-scoped issuance/proxy policy. Operator rotation changes creation authority;
+From 0.4, operators can issue expiring resource/use/lifetime-limited creation
+grants (see creation-grants.md). Apps retain their own user/issuance policy. Operator rotation changes creation authority;
 existing per-allocation upload/delete capabilities remain valid.
 
 SQLite uses WAL and FULL synchronous commits. Immediate allocation transactions
