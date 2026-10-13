@@ -33,6 +33,16 @@ responses and accept cancellation. Pairing flows bound the transport's polling
 to their original session deadline. Constructing an adapter performs no requests.
 Only public metadata enters the directory; never pass an offer's secret fields.
 
+Public lookup and message polling retry a transient network error, request
+timeout, or HTTP 408, 429, 502, 503 or 504 at most twice, after 100 ms and 200 ms.
+Each request retains its ten-second timeout. A 404 message response is ordinary
+polling and waits 200 ms; a successful read resets the transient failure streak.
+Reads retain the same locator, role, capability and message sequence. They never
+create a new gate, reseal a packet or extend the flow's original expiry.
+Cancellation, expiry and transport disposal interrupt requests and retry waits.
+Authentication errors, malformed messages and other HTTP errors fail immediately;
+exhausting the retry budget leaves the pairing flow terminal.
+
 Sessions, messages, aliases and quotas survive restart. Session expiry is fixed
 at allocation and at most 600 seconds; reconnect, claims and writes cannot extend
 it. Restarting transport does not authorise restoring endpoint secrets, gates

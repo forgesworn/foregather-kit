@@ -2,7 +2,8 @@
 
 Stored invitations, spoken v2 words and experimental live bootstrap are locally
 implemented with native/WASM and independent implementation tests. Stored v1
-wire compatibility remains unchanged; the existing apps are not yet migrated.
+wire compatibility remains unchanged. Joystick's public pilot is integrated;
+other existing apps retain their own planned adoption work.
 
 1. Independently review v1's protocol, implementation and resolver configuration.
    Qualify actual mobile browsers, package loading and gateway deployments.
@@ -13,8 +14,8 @@ wire compatibility remains unchanged; the existing apps are not yet migrated.
    upstream SPAKE2, endpoint lifecycle budgets, memory custody and actual relay
    composition. The durable Rust relay and its HTTP adapter are implemented;
    real public gateway/load/phone qualification remains separate.
-4. Adopt live pairing in Joystick with separate host authority and controller
-   admission. Continuing session traffic also needs its own authenticated
+4. Qualify Joystick's deployed live-pairing pilot, with separate host authority
+   and controller admission. Continuing session traffic also needs its own authenticated
    encryption; protecting bootstrap alone does not make the broker private.
 5. Adopt the implemented Spoken Token v2 words profile where useful; keep
    application replay/attempt policy and named identity checks separate.
@@ -32,5 +33,5 @@ change its frozen v1 derivation or claim deletion prevents offline recovery.
 
 The seven adoption additions are implemented in 0.4; see adoption-status.md for
 current evidence. Joystick's optional SDK transfer/review adapters and a real
-browser/broker journey are present. Production pad/game UI migration, physical
+browser/broker journey and public pad/game pairing screens are present. Physical
 acceptance and continuing-traffic encryption remain separate app-owned work.

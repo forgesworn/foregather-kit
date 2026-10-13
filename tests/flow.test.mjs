@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {init,createLiveOffer,createCharacterOffer,createPairingFlow,ForegatherTransportError} from '../packages/browser/dist/index.mjs';
+import {init,createLiveOffer,createCharacterOffer,createPairingFlow,createLiveRelayClient,ForegatherTransportError} from '../packages/browser/dist/index.mjs';
 await init({module_or_path:readFileSync(new URL('../packages/browser/dist/foregather_wasm_bg.wasm',import.meta.url))});
 const namespace='test.flows',purpose='invitation',now=()=>1800000000;
 test('expiry cancels an unresponsive transport and cannot restart the spent flow',async()=>{
@@ -82,4 +82,63 @@ test('flow rejects clock rollback, wrong local context and excessive payloads',a
   await assert.rejects(flow.pair());assert.equal(flow.state,'failed');
   const {a,b}=flows({onState:()=>{throw Error('presentation failed');}});await Promise.all([a.pair(),b.pair()]);a.verify({matches:true});b.verify({matches:true});
   await assert.rejects(a.send({payload:new Uint8Array(16365)}));assert.equal(a.state,'ready');a.cancel();b.cancel();
+});
+test('HTTP read recovery keeps one exchange and packet counter through the complete flow',async()=>{
+  const offer=createLiveOffer({namespace,purpose,now:now()}),inviterToken=Buffer.alloc(32,1).toString('base64url');
+  const messages=new Map(),readCounts=new Map(),writes=[],progress=[];let recipientToken,claims=0;
+  const relay=createLiveRelayClient({apiUrl:'https://example.test/v1/',fetch:async(url,options)=>{
+    if(url.pathname.endsWith('/claim')){claims++;recipientToken=options.headers.Authorization;return new Response(null,{status:204});}
+    const [role,kind]=url.pathname.split('/').slice(-2),key=`${role}/${kind}`;
+    const expected=role==='inviter'?`Bearer ${inviterToken}`:recipientToken;
+    if(options.method==='PUT') {
+      assert.equal(options.headers.Authorization,expected);writes.push({key,value:JSON.parse(options.body)});
+      assert.equal(messages.has(key),false);messages.set(key,JSON.parse(options.body));return new Response(null,{status:204});
+    }
+    assert.equal(options.method,'GET');assert.ok([`Bearer ${inviterToken}`,recipientToken].includes(options.headers.Authorization));
+    const count=(readCounts.get(key)??0)+1;readCounts.set(key,count);
+    if(count===1){if(kind==='packet-0')throw new TypeError('Synthetic network interruption');return new Response(null,{status:503});}
+    return messages.has(key)?new Response(JSON.stringify(messages.get(key))):new Response(null,{status:404});
+  }});
+  const base={...offer,namespace,purpose,now};
+  const a=createPairingFlow({...base,role:'inviter',transport:relay.inviter({allocation:{room:{session:offer.session,secret_format:'words'},inviter_token:inviterToken}}),onState:value=>progress.push(value.state)});
+  const b=createPairingFlow({...base,role:'recipient',transport:await relay.recipient({locator:offer.session.locator})});
+  try {
+    const [aw,bw]=await Promise.all([a.pair(),b.pair()]);assert.equal(aw,bw);a.verify({matches:true});b.verify({matches:true});
+    const payload=new Uint8Array([0,255,1]);const [receipt,received]=await Promise.all([a.send({payload}),b.receive()]);
+    assert.deepEqual(receipt,{decrypted:true});assert.deepEqual(received,payload);assert.equal(claims,1);
+    assert.deepEqual(writes.map(({key})=>key).sort(),['inviter/hello','inviter/packet-0','inviter/proof','recipient/hello','recipient/packet-0','recipient/proof']);
+    assert.ok([...readCounts.values()].every(count=>count>=2));assert.ok(writes.filter(({key})=>key.endsWith('/packet-0')).every(({value})=>value.seq===0));
+    assert.deepEqual(progress,['waiting','confirming','verifying','ready','sending','awaiting-receipt','delivered']);
+  }finally{a.dispose();b.dispose();}
+});
+function pollingFlow(fetch,{current=now,lifetime=120}={}) {
+  const offer=createLiveOffer({namespace,purpose,now:current(),lifetime});
+  const relay=createLiveRelayClient({apiUrl:'https://example.test/v1/',fetch});
+  return createPairingFlow({...offer,namespace,purpose,role:'inviter',now:current,transport:relay.inviter({allocation:{room:{session:offer.session,secret_format:'words'},inviter_token:Buffer.alloc(32,1).toString('base64url')}})});
+}
+test('exhausted HTTP reads destroy the flow without a new hello or gate attempt',async()=>{
+  let reads=0,writes=0;const flow=pollingFlow(async(_url,options)=>{
+    if(options.method==='PUT'){writes++;return new Response(null,{status:204});}reads++;return new Response(null,{status:503});
+  });
+  try {
+    await assert.rejects(flow.pair(),error=>error.kind==='http'&&error.status===503);assert.equal(flow.state,'failed');assert.equal(reads,3);assert.equal(writes,1);
+    await assert.rejects(flow.pair());assert.equal(reads,3);assert.equal(writes,1);
+  }finally{flow.dispose();}
+});
+test('cancelling HTTP retry backoff is terminal and sends no additional requests',async()=>{
+  let reads=0,timer;const controller=new AbortController();
+  const flow=pollingFlow(async(_url,options)=>{
+    if(options.method==='PUT')return new Response(null,{status:204});reads++;timer=setTimeout(()=>controller.abort(),20);return new Response(null,{status:503});
+  });
+  try{await assert.rejects(flow.pair({signal:controller.signal}));assert.equal(flow.state,'cancelled');assert.equal(reads,1);await assert.rejects(flow.pair());assert.equal(reads,1);}finally{clearTimeout(timer);flow.dispose();}
+});
+test('a read retry cannot extend the original pairing expiry',async()=>{
+  let reads=0,requestSignal;const current=()=>Math.floor(Date.now()/1000);
+  const flow=pollingFlow(async(_url,options)=>{
+    if(options.method==='PUT')return new Response(null,{status:204});reads++;
+    if(reads===1)return new Response(null,{status:503});
+    requestSignal=options.signal;return new Promise((resolve,reject)=>options.signal.addEventListener('abort',()=>reject(options.signal.reason),{once:true}));
+  },{current,lifetime:1});
+  const watchdog=setTimeout(()=>flow.cancel(),2500);
+  try{await assert.rejects(flow.pair());assert.equal(flow.state,'expired');assert.equal(reads,2);assert.equal(requestSignal.aborted,true);await assert.rejects(flow.pair());assert.equal(reads,2);}finally{clearTimeout(watchdog);flow.dispose();}
 });
