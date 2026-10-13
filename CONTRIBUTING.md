@@ -16,6 +16,12 @@ of the actual browser tarball, including TypeScript positive and negative cases.
 Run `cargo package --locked -p foregather-kit --all-features --allow-dirty`,
 `cargo audit`, `cargo deny check licenses sources` and `npm audit`.
 The independent Python reference command is in [the live protocol](docs/live-protocol.md).
+Run `node scripts/build-native.mjs check` with Swift/Kotlin/JDK installed for
+foreign consumers. Apple and Android package builds are documented in
+docs/native.md. These builds use the same target cache and remove owned staging.
+The optional real Joystick composition requires an explicitly supplied built
+checkout: `npm run test:joystick -- /your/joystick`. It does not discover projects
+or grant application authority implicitly.
 
 Include the problem, changed behaviour and checks run in your pull request.
 Changes to protocol bytes require a distinct version/profile, frozen vectors,

@@ -47,3 +47,40 @@ export function canonicalRendezvousCode(code: string): string;
 export function formatCharacterCode(code: string): string;
 /** Applies to independent uniform generation; character count excludes separators. */
 export function accessSecretOdds(input: {format: 'words' | 'characters'; count: number; attempts?: number}): Readonly<{bits: number; possibilities: bigint; guesses: number}>;
+
+export function parseLiveSession(input: {session: LiveSession; namespace: string; purpose: string; now: number}): Readonly<LiveSession>;
+export type PairingState = 'idle' | 'waiting' | 'confirming' | 'verifying' | 'ready' | 'sending' | 'awaiting-receipt' | 'delivered' | 'receiving' | 'received' | 'expired' | 'cancelled' | 'failed';
+export interface PairingProgress { readonly state: PairingState; readonly expires: number }
+export type LiveMessage = {kind:'hello' | 'proof'; value:string; signal?:AbortSignal} | {kind:'packet'; sequence:number; value:unknown; signal?:AbortSignal};
+export type LiveReceive = {kind:'hello' | 'proof'; signal?:AbortSignal} | {kind:'packet'; sequence:number; signal?:AbortSignal};
+export interface PairingTransport { send(input:LiveMessage):Promise<void>; receive(input:LiveReceive):Promise<unknown>; dispose?():void }
+export interface PairingFlow {
+  readonly state:PairingState;
+  pair(input?:{signal?:AbortSignal}):Promise<string>;
+  verify(input:{matches:boolean}):void;
+  send(input:{payload:Uint8Array;signal?:AbortSignal}):Promise<Readonly<{decrypted:true}>>;
+  receive(input?:{signal?:AbortSignal}):Promise<Uint8Array>;
+  cancel():void;
+  dispose():void;
+}
+export function createPairingFlow(input:{session:LiveSession;role:'inviter'|'recipient';namespace:string;purpose:string;now:()=>number;transport:PairingTransport;onState?:(progress:PairingProgress)=>void} & ({secretWords:string;secretCode?:never}|{secretCode:string;secretWords?:never})):PairingFlow;
+export interface HttpConfig {apiUrl:string;allowLoopbackHttp?:boolean;fetch?:typeof fetch}
+export class ForegatherTransportError extends Error { readonly kind:string; readonly status?:number; constructor(kind:string,status?:number) }
+export interface CreationGrant {readonly id:string;readonly token:string;readonly resource:'stored'|'live';readonly expires:number;readonly remaining:number;readonly max_invitation_lifetime:number}
+export function createCreationGrantClient(config:HttpConfig):Readonly<{
+  issue(input:{operatorToken:string;resource:'stored'|'live';expires:number;maxUses:number;maxInvitationLifetime:number;signal?:AbortSignal}):Promise<CreationGrant>;
+  revoke(input:{operatorToken:string;grantId:string;signal?:AbortSignal}):Promise<void>;
+}>;
+export interface LiveRoom {session:LiveSession;secret_format:'words'|'characters'}
+export interface PairingLinkConfig {baseUrl:string;namespace:string;purpose:string;now:number;allowLoopbackHttp?:boolean}
+export function validatePublicRoom(input:{room:LiveRoom;namespace:string;purpose:string;now:number}):Readonly<LiveRoom>;
+export function createPairingLink(input:PairingLinkConfig & {room:LiveRoom}):string;
+export function parsePairingLink(input:PairingLinkConfig & {url:string}):Readonly<LiveRoom>;
+export interface LiveAllocation {readonly room:LiveRoom;readonly room_code:string;readonly inviter_token:string;readonly delete_token:string}
+export function createLiveRelayClient(config:HttpConfig):Readonly<{
+  allocate(input:{room:LiveRoom;createToken:string;signal?:AbortSignal}):Promise<LiveAllocation>;
+  lookup(input:{roomCode:string;signal?:AbortSignal}):Promise<LiveRoom>;
+  inviter(input:{allocation:LiveAllocation}):PairingTransport;
+  recipient(input:{locator:string;signal?:AbortSignal}):Promise<PairingTransport>;
+  delete(input:{locator:string;deleteToken:string;signal?:AbortSignal}):Promise<void>;
+}>;

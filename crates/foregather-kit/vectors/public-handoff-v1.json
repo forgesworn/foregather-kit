@@ -1,0 +1,37 @@
+{
+  "profile": "foregather-public-handoff/1",
+  "syntheticOnly": true,
+  "generatedBy": "Independent Python JSON UTF-8 and base64url",
+  "vectors": [
+    {
+      "base": "https://example.test/pair/",
+      "room": {
+        "session": {
+          "profile": "foregather-live/spake2-ed25519/1",
+          "namespace": "example.rooms",
+          "purpose": "invitation",
+          "locator": "BwcHBwcHBwcHBwcHBwcHBw",
+          "issued": 1800000000,
+          "expires": 1800000120
+        },
+        "secret_format": "words"
+      },
+      "url": "https://example.test/pair/#eyJ2IjoiZm9yZWdhdGhlci1wdWJsaWMtaGFuZG9mZi8xIiwicm9vbSI6eyJzZXNzaW9uIjp7InByb2ZpbGUiOiJmb3JlZ2F0aGVyLWxpdmUvc3Bha2UyLWVkMjU1MTkvMSIsIm5hbWVzcGFjZSI6ImV4YW1wbGUucm9vbXMiLCJwdXJwb3NlIjoiaW52aXRhdGlvbiIsImxvY2F0b3IiOiJCd2NIQndjSEJ3Y0hCd2NIQndjSEJ3IiwiaXNzdWVkIjoxODAwMDAwMDAwLCJleHBpcmVzIjoxODAwMDAwMTIwfSwic2VjcmV0X2Zvcm1hdCI6IndvcmRzIn19"
+    },
+    {
+      "base": "https://example.test/pair/",
+      "room": {
+        "session": {
+          "profile": "foregather-live/spake2-ed25519/1",
+          "namespace": "example.rooms",
+          "purpose": "invitation",
+          "locator": "BwcHBwcHBwcHBwcHBwcHBw",
+          "issued": 1800000000,
+          "expires": 1800000120
+        },
+        "secret_format": "characters"
+      },
+      "url": "https://example.test/pair/#eyJ2IjoiZm9yZWdhdGhlci1wdWJsaWMtaGFuZG9mZi8xIiwicm9vbSI6eyJzZXNzaW9uIjp7InByb2ZpbGUiOiJmb3JlZ2F0aGVyLWxpdmUvc3Bha2UyLWVkMjU1MTkvMSIsIm5hbWVzcGFjZSI6ImV4YW1wbGUucm9vbXMiLCJwdXJwb3NlIjoiaW52aXRhdGlvbiIsImxvY2F0b3IiOiJCd2NIQndjSEJ3Y0hCd2NIQndjSEJ3IiwiaXNzdWVkIjoxODAwMDAwMDAwLCJleHBpcmVzIjoxODAwMDAwMTIwfSwic2VjcmV0X2Zvcm1hdCI6ImNoYXJhY3RlcnMifX0"
+    }
+  ]
+}

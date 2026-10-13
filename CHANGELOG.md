@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.4.0 - 2026-10-13 (experimental adoption APIs)
+
+* Add a durable optional live relay with endpoint capabilities, fixed expiry,
+  identical-byte retries, shared record/rate/byte quotas and bounded public lookup.
+* Add expiring resource/use/lifetime-scoped creation grants and operator revocation.
+* Add reusable pairing flows with progress, cancellation, expiry, explicit
+  comparison acceptance and an encrypted exact-byte decryption receipt.
+* Add separately versioned public handoff and transfer profiles with frozen
+  independent vectors, preserving all existing stored/spoken/PAKE bytes.
+* Add local public-only QR rendering/decoding and camera lifecycle cleanup.
+* Add Swift/Kotlin native APIs, caller-validated KithMoot codec, Apple package
+  and four-ABI Android AAR builders with real foreign/package consumers.
+* Add a distinct smaller stored-only browser entry and strict installed consumer
+  checks for all entries. Exercise Joystick's optional authority/review adapters
+  with real browser/controller input without moving admission into Foregather.
+* Add systemd/container layouts and native/container CI. Native UniFFI retains
+  MPL-2.0 notices; Foregather remains MIT. Live remains experimental: physical
+  devices, public gateway/load qualification and independent review are open.
+
 ## 0.3.1 - 2026-10-12 (human-readable codes)
 
 * Display/copy character codes in triples (`DFV-SJX`); accept grouped or plain

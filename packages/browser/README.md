@@ -31,7 +31,9 @@ WASM; there are no external JavaScript runtime packages or required hosted servi
 Stored bearer URLs can be copied and replayed. Expiry/deletion does not erase
 captured ciphertext or revoke an invitation already recovered. JavaScript secret
 strings cannot be deterministically erased. Version 0.2 also includes Spoken Token v2 words and experimental live PAKE.
-Mobile FFI, app migrations and an independent security review remain open.
+Native Swift/Kotlin packages are available from the matching source build/release;
+physical phones, production app migrations and independent security review remain
+separate qualification gates.
 
 Live: createLiveOffer creates separate public session and secretWords;
 createLivePairing takes locally chosen namespace/purpose and a fixed role.
@@ -101,3 +103,31 @@ all endpoints reusing a secret. Human-chosen values, expiry and display hyphens
 do not establish or increase entropy. BigInt preserves exact counts; convert
 it to a string before JSON serialization. See the guide for comparison tables,
 public lookup probabilities and the experimental security assumptions.
+
+## Adoption APIs (0.4)
+
+`createPairingFlow` coordinates the one-use gate, exchange, confirmation,
+explicit verification, encrypted handoff and decrypted receipt. Supply your
+locally chosen namespace/purpose, trusted clock function and transport. `pair()`
+returns comparison words; `verify({matches:true})` must follow an explicit user
+comparison on both endpoints. The inviter calls `send({payload,signal})`; the
+recipient calls `receive({signal})`. Receiving/decrypting creates no membership.
+Cancelled, expired or failed flows are terminal and require fresh offers.
+
+`createLiveRelayClient({apiUrl:'https://example/v1/'})` implements optional explicit
+HTTP allocation/lookup/claim/delete and role-specific transport. Creation tokens
+may be operator-issued limited grants from `createCreationGrantClient`.
+Keep operator authority in your backend. Capabilities travel only in headers;
+public lookup accepts only a public alias, never the access secret.
+
+`createPairingLink` and `parsePairingLink` encode/validate public-only handoffs
+with locally selected base URL/context/time. The optional `/qr` entry adds local
+SVG/pixel generation, image decoding and explicit camera scanning with media
+cleanup. Keep the private secret separate and retain manual entry fallback.
+
+Import `/stored` for a distinct smaller WASM module with stored codecs, resolver
+and grant client; it cannot expose the experimental PAKE API. All entries ship
+inside the same self-contained tarball with declarations and licence texts.
+
+See the repository's live-relay, creation-grants, public-handoff, transfer-protocol
+and native guides for bounds, frozen profiles, packaging and remaining gates.

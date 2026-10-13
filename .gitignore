@@ -2,5 +2,6 @@
 /packages/browser/dist/
 /node_modules/
 /data/
+/deploy/foregather.env
 *.tgz
 .DS_Store

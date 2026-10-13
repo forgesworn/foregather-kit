@@ -1,11 +1,21 @@
 import { execFileSync } from 'node:child_process';
-import { mkdirSync, copyFileSync } from 'node:fs';
+import { mkdirSync, copyFileSync, readFileSync, writeFileSync } from 'node:fs';
+import ts from 'typescript';
+import {createHash} from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 const root = fileURLToPath(new URL('../', import.meta.url));
 const cwd = { cwd: root, stdio: 'inherit' };
 execFileSync('cargo', ['build', '--locked', '-p', 'foregather-wasm', '--release', '--target', 'wasm32-unknown-unknown'], cwd);
 mkdirSync(`${root}/packages/browser/dist`, { recursive: true });
 execFileSync('wasm-bindgen', ['--target', 'web', '--out-dir', 'packages/browser/dist', '--out-name', 'foregather_wasm', 'target/wasm32-unknown-unknown/release/foregather_wasm.wasm'], cwd);
-for (const name of ['index.mjs', 'index.d.ts']) copyFileSync(`${root}/packages/browser/src/${name}`, `${root}/packages/browser/dist/${name}`);
+execFileSync('cargo', ['build', '--locked', '-p', 'foregather-wasm', '--no-default-features', '--release', '--target', 'wasm32-unknown-unknown'], cwd);
+execFileSync('wasm-bindgen', ['--target', 'web', '--out-dir', 'packages/browser/dist', '--out-name', 'foregather_stored', 'target/wasm32-unknown-unknown/release/foregather_wasm.wasm'], cwd);
+for (const name of ['index.mjs', 'index.d.ts', 'stored.mjs', 'stored.d.ts', 'stored-api.mjs', 'resolver.mjs', 'transport.mjs', 'flow.mjs', 'handoff.mjs', 'qr.mjs', 'qr.d.ts']) copyFileSync(`${root}/packages/browser/src/${name}`, `${root}/packages/browser/dist/${name}`);
+const generator=readFileSync(`${root}/packages/browser/src/vendor/qrcodegen.ts`,'utf8');
+if(createHash('sha256').update(generator).digest('hex')!=='1dc03fb5a10e0e2318ea162755bbdb9977ca6ce52cff959e9c9b6deafdccda9c')throw Error('Vendored QR generator does not match its pinned source');
+writeFileSync(`${root}/packages/browser/dist/qrcodegen.mjs`,ts.transpileModule(`${generator}\nexport {qrcodegen};`,{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.ES2022}}).outputText);
+const decoder=readFileSync(`${root}/node_modules/jsqr/dist/jsQR.js`,'utf8');
+// The pinned UMD bundle uses this private CommonJS object; no global is installed.
+writeFileSync(`${root}/packages/browser/dist/jsqr.mjs`,`const module={exports:{}};const exports=module.exports;\n${decoder}\nexport default module.exports;\n`);
 copyFileSync(`${root}/LICENSE`, `${root}/packages/browser/LICENSE`);
 execFileSync('python3', ['scripts/generate-licenses.py'], cwd);

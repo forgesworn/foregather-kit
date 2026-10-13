@@ -1,0 +1,24 @@
+[Unit]
+Description=Foregather invitation resolver and experimental live relay
+After=network.target
+
+[Service]
+User=foregather
+Group=foregather
+EnvironmentFile=/etc/foregather/foregather.env
+ExecStart=/opt/foregather/foregather-server
+Restart=on-failure
+UMask=0077
+StateDirectory=foregather
+StateDirectoryMode=0700
+Environment=FOREGATHER_DB=/var/lib/foregather/foregather.sqlite
+Environment=FOREGATHER_BIND=127.0.0.1:8787
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/var/lib/foregather
+TimeoutStopSec=15
+
+[Install]
+WantedBy=multi-user.target

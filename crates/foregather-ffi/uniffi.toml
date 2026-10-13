@@ -1,0 +1,8 @@
+[bindings.swift]
+module_name = "Foregather"
+ffi_module_name = "ForegatherFFI"
+generate_module_map = true
+
+[bindings.kotlin]
+package_name = "dev.forgesworn.foregather"
+cdylib_name = "foregather_ffi"

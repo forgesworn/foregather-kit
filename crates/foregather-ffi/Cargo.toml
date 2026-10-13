@@ -1,0 +1,31 @@
+[package]
+name = "foregather-ffi"
+description = "Swift/Kotlin bindings to Foregather's caller-controlled invitation APIs"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+publish = false
+
+[lib]
+crate-type = ["lib", "cdylib", "staticlib"]
+
+[features]
+default = []
+experimental-live = ["foregather-kit/experimental-live"]
+bindgen = ["uniffi/cli", "uniffi/cargo-metadata"]
+
+[[bin]]
+name = "foregather-bindgen"
+path = "src/bin/bindgen.rs"
+required-features = ["bindgen"]
+
+[dependencies]
+foregather-kit.workspace = true
+rand_core.workspace = true
+serde_json.workspace = true
+zeroize.workspace = true
+uniffi = { version = "=0.32.2", default-features = false }
+thiserror = "2"

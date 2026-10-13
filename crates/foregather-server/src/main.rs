@@ -1,4 +1,4 @@
-use foregather_server::{Config, Store, router};
+use foregather_server::{Config, Store, router, router_with_live};
 use std::{
     env,
     net::SocketAddr,
@@ -38,12 +38,27 @@ async fn run() -> Result<(), Box<dyn std::error::Error>> {
         "Foregather resolver listening on {}",
         listener.local_addr()?
     );
-    axum::serve(listener, router(store))
-        .with_graceful_shutdown(async {
-            let _ = tokio::signal::ctrl_c().await;
-        })
+    let app = match env::var("FOREGATHER_ENABLE_LIVE").as_deref() {
+        Ok("1") => router_with_live(store),
+        Ok("0") | Err(_) => router(store),
+        _ => return Err("invalid live opt-in".into()),
+    };
+    axum::serve(listener, app)
+        .with_graceful_shutdown(shutdown())
         .await?;
     Ok(())
+}
+async fn shutdown() {
+    #[cfg(unix)]
+    {
+        if let Ok(mut terminate) =
+            tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate())
+        {
+            tokio::select! { _ = tokio::signal::ctrl_c() => {}, _ = terminate.recv() => {} }
+            return;
+        }
+    }
+    let _ = tokio::signal::ctrl_c().await;
 }
 #[tokio::main]
 async fn main() {

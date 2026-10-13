@@ -1,5 +1,7 @@
 //! Ciphertext storage, not an admission authority. All capabilities travel in headers.
 #![forbid(unsafe_code)]
+mod adoption;
+pub use adoption::{CreationGrant, GrantRequest, LiveAllocation, LiveRoom, router_with_live};
 use axum::{
     Router,
     body::Bytes,
@@ -122,6 +124,7 @@ impl Store {
                 upload_hash BLOB NOT NULL, delete_hash BLOB NOT NULL, envelope TEXT);
             CREATE INDEX IF NOT EXISTS invitation_expiry ON invitations(expires);
             CREATE TABLE IF NOT EXISTS create_rate (singleton INTEGER PRIMARY KEY CHECK(singleton=1), started INTEGER NOT NULL, count INTEGER NOT NULL);")?;
+        db.execute_batch(adoption::SCHEMA)?;
         let create_hash = hash(b"create", config.create_token.as_ref());
         Ok(Self {
             db: Mutex::new(db),
@@ -131,9 +134,6 @@ impl Store {
         })
     }
     pub fn create(&self, token: &[u8], expires: u64) -> ApiResult<Allocation> {
-        if !equal(&self.create_hash, &hash(b"create", token)) {
-            return Err(StatusCode::UNAUTHORIZED);
-        }
         let now = (self.config.clock)();
         lifetime(expires, now).map_err(|_| StatusCode::BAD_REQUEST)?;
         let now = now as i64;
@@ -144,29 +144,7 @@ impl Store {
         let tx = db
             .transaction_with_behavior(TransactionBehavior::Immediate)
             .map_err(|_| StatusCode::SERVICE_UNAVAILABLE)?;
-        tx.execute("DELETE FROM invitations WHERE expires<=?1 OR (envelope IS NULL AND upload_deadline<=?1)", [now]).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-        let count: u32 = tx
-            .query_row("SELECT COUNT(*) FROM invitations", [], |row| row.get(0))
-            .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-        if count >= self.config.max_records {
-            return Err(StatusCode::INSUFFICIENT_STORAGE);
-        }
-        let rate: Option<(i64, u32)> = tx
-            .query_row(
-                "SELECT started,count FROM create_rate WHERE singleton=1",
-                [],
-                |row| Ok((row.get(0)?, row.get(1)?)),
-            )
-            .optional()
-            .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-        let (started, used) = match rate {
-            Some((started, _)) if now < started => return Err(StatusCode::SERVICE_UNAVAILABLE),
-            Some((started, count)) if now - started < 60 => (started, count),
-            _ => (now, 0),
-        };
-        if used >= self.config.creates_per_minute {
-            return Err(StatusCode::TOO_MANY_REQUESTS);
-        }
+        adoption::reserve_creation(self, &tx, token, "stored", expires, now as u64)?;
         let upload = random_token()?;
         let delete = random_token()?;
         let mut id = None;
@@ -182,7 +160,6 @@ impl Store {
             }
         }
         let id = id.ok_or(StatusCode::SERVICE_UNAVAILABLE)?;
-        tx.execute("INSERT INTO create_rate VALUES(1,?1,?2) ON CONFLICT(singleton) DO UPDATE SET started=excluded.started,count=excluded.count", params![started, used+1]).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
         tx.commit().map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
         Ok(Allocation {
             id,
@@ -196,11 +173,14 @@ impl Store {
         let now = (self.config.clock)();
         let envelope = Envelope::parse(text, now).map_err(|_| StatusCode::BAD_REQUEST)?;
         let now = now as i64;
-        let db = self
+        let mut db = self
             .db
             .lock()
             .map_err(|_| StatusCode::SERVICE_UNAVAILABLE)?;
-        let record: Option<(i64,i64,Vec<u8>,bool)> = db.query_row("SELECT expires,upload_deadline,upload_hash,envelope IS NOT NULL FROM invitations WHERE id=?1", [id],
+        let tx = db
+            .transaction_with_behavior(TransactionBehavior::Immediate)
+            .map_err(|_| StatusCode::SERVICE_UNAVAILABLE)?;
+        let record: Option<(i64,i64,Vec<u8>,bool)> = tx.query_row("SELECT expires,upload_deadline,upload_hash,envelope IS NOT NULL FROM invitations WHERE id=?1", [id],
             |row| Ok((row.get(0)?,row.get(1)?,row.get(2)?,row.get(3)?))).optional().map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
         let (expires, deadline, expected, uploaded) = record.ok_or(StatusCode::NOT_FOUND)?;
         if !equal(&expected, &hash(b"upload", token)) || expires <= now || deadline <= now {
@@ -213,10 +193,12 @@ impl Store {
             return Err(StatusCode::BAD_REQUEST);
         }
         // The local mutex serialises writers; the conditional statement also guards multiple processes.
-        let changed = db.execute("UPDATE invitations SET envelope=?1 WHERE id=?2 AND envelope IS NULL AND expires>?3 AND upload_deadline>?3", params![text,id,now]).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+        adoption::reserve_payload(self, &tx, text.len(), now as u64)?;
+        let changed = tx.execute("UPDATE invitations SET envelope=?1 WHERE id=?2 AND envelope IS NULL AND expires>?3 AND upload_deadline>?3", params![text,id,now]).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
         if changed != 1 {
             return Err(StatusCode::CONFLICT);
         }
+        tx.commit().map_err(|_| StatusCode::SERVICE_UNAVAILABLE)?;
         Ok(())
     }
     pub fn fetch(&self, id: &str) -> ApiResult<String> {
@@ -350,6 +332,9 @@ async fn protections(request: axum::extract::Request, next: Next) -> Response {
     response
 }
 pub fn router(store: Arc<Store>) -> Router {
+    finish_router(routes(), store)
+}
+fn routes() -> Router<Arc<Store>> {
     Router::new()
         .route("/health", get(|| async { "ok" }))
         .route("/v1/invitations", post(create))
@@ -357,6 +342,10 @@ pub fn router(store: Arc<Store>) -> Router {
             "/v1/invitations/{id}",
             get(fetch).put(upload).delete(delete),
         )
+        .merge(adoption::grant_routes())
+}
+fn finish_router(routes: Router<Arc<Store>>, store: Arc<Store>) -> Router {
+    routes
         .with_state(store)
         .layer(DefaultBodyLimit::max(MAX_ENVELOPE_BYTES))
         .layer(tower::limit::ConcurrencyLimitLayer::new(32))

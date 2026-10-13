@@ -13,6 +13,13 @@ in Rust/WASM. MIT. Copyright (c) 2026 TheCryptoDonkey. No required hosted servic
 | Frozen Spoken Token v2 words | [Spoken protocol](spoken-protocol.md) |
 | Character secrets and public room lookup | [Character codes](character-codes.md) |
 | Experimental PAKE transcript and lifecycle | [Live protocol](live-protocol.md) |
+| Durable optional live service and role capabilities | [Live relay](live-relay.md) |
+| Limited delegated creation authority | [Creation grants](creation-grants.md) |
+| Public-only links, QR and camera cleanup | [Public handoff](public-handoff.md) |
+| Encrypted recipient-decrypted receipts | [Transfer framing](transfer-protocol.md) |
+| Swift package/XCFramework and Android AAR | [Native bindings](native.md) |
+| Supported self-hosting layouts | [Deployment](../deploy/README.md) |
+| Seven-feature implementation and qualification | [Adoption status](adoption-status.md) |
 | Threat model, privacy limits, private reports | [Security](../SECURITY.md) |
 | Tested evidence and unqualified gates | [Validation](validation.md) |
 | Planned adoption and independent review | [Roadmap](roadmap.md) |

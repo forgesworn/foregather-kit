@@ -43,6 +43,10 @@ use serde::{Deserialize, Serialize};
 use std::fmt;
 use url::Url;
 use zeroize::{Zeroize, Zeroizing};
+#[cfg(feature = "experimental-live")]
+pub mod handoff;
+#[cfg(feature = "experimental-live")]
+pub mod transfer;
 
 /// Maximum accepted envelope, URL or encoded input size in bytes.
 pub const MAX_ENVELOPE_BYTES: usize = 32 * 1024;

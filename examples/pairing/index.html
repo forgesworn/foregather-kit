@@ -1,0 +1,12 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Foregather pairing</title><link rel="stylesheet" href="/pairing.css"></head><body><main>
+<h1>Pair and share an invitation</h1><p>Create a private experimental pairing and share an invitation for review.</p>
+<p id="status" role="status" aria-live="polite">Choose how to start.</p>
+<section id="setup"><h2>Create a pairing</h2><form id="create-form"><label for="format">Private secret format</label><select id="format"><option value="words">Four words</option><option value="characters">Six characters</option></select><button id="create">Create pairing</button></form>
+<h2>Find a pairing</h2><form id="find-form"><label for="room-code">Public room code</label><input id="room-code" autocomplete="off" spellcheck="false"><button id="find">Find pairing</button></form><button id="scan">Scan a public pairing QR</button><video id="camera" hidden></video></section>
+<section id="offer" hidden><h2>Share the public pairing</h2><p id="public-code"></p><a id="link">Open pairing link</a><div id="qr"></div><h3>Share this private secret separately</h3><p id="private-secret"></p><p id="expires"></p></section>
+<section id="recipient" hidden><h2>Enter the separate private secret</h2><form id="pair-form"><label for="secret">Private secret</label><input id="secret" autocomplete="off" spellcheck="false"><button id="pair">Pair</button></form></section>
+<section id="verification" hidden><h2>Compare verification words</h2><p id="words"></p><p>Compare these words with the other client.</p><button id="matches">The words match</button><button id="mismatch">Cancel pairing</button></section>
+<section id="send-section" hidden><h2>Send an invitation</h2><label for="invitation">Invitation for application review</label><textarea id="invitation"></textarea><button id="send">Send encrypted invitation</button></section>
+<section id="received" hidden><h2>Invitation for review</h2><pre id="payload"></pre><p>Review this invitation in your application before joining.</p></section>
+<button id="restart" hidden>Start again with a fresh pairing</button>
+</main><script type="module" src="/pairing.mjs"></script></body></html>

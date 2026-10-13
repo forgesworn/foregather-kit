@@ -1,6 +1,6 @@
 {
   "name": "@forgesworn/foregather-kit",
-  "version": "0.3.1",
+  "version": "0.4.0",
   "description": "Portable invitation transfer, spoken verification and experimental live pairing in Rust/WASM",
   "type": "module",
   "license": "MIT",
@@ -9,6 +9,14 @@
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.mjs"
+    },
+    "./stored": {
+      "types": "./dist/stored.d.ts",
+      "import": "./dist/stored.mjs"
+    },
+    "./qr": {
+      "types": "./dist/qr.d.ts",
+      "import": "./dist/qr.mjs"
     }
   },
   "files": [

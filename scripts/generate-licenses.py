@@ -32,6 +32,10 @@ def bundle(packages):
         directory = Path(p["manifest_path"]).parent
         files = sorted(f for f in directory.iterdir() if f.is_file() and
                        (f.name.upper().startswith(("LICENSE", "LICENCE", "COPYING", "UNLICENSE")) or f.name.upper() == "NOTICE"))
+        if not files and p['name'] in {"uniffi", "uniffi_core", "uniffi_internal_macros", "uniffi_macros", "uniffi_meta", "uniffi_pipeline"} and p['version'] == '0.32.2':
+            # The published crates reference the upstream repository's MPL text
+            # without including that file. Keep the exact tagged source text.
+            files = [root / "packages/native/licenses/uniffi-MPL-2.0.txt"]
         if not files:
             raise RuntimeError(f"Missing licence text for {p['name']} {p['version']}")
         sections.append(f"\n{'=' * 72}\n{p['name']} {p['version']}\nSPDX: {p['license']}\n"
@@ -42,12 +46,17 @@ def bundle(packages):
     return "".join(sections).rstrip() + "\n"
 
 
+qr_source = (root / "packages/browser/src/vendor/qrcodegen.ts").read_text()
+qr_notice = "\n".join(line.rstrip() for line in qr_source[:qr_source.index('*/') + 2].splitlines())
+js_notice = (root / "node_modules/jsqr/LICENSE").read_text().rstrip() + "\n"
+qr_licences = "\n\nQR presentation dependencies\n\nProject Nayuki QR-Code-generator\nPinned commit: 3c6d0b3cefb4e049dc337e82237c9644399716a8\n" + qr_notice + "\n\njsQR 1.4.0, Copyright (c) Cosmo Wolfe and contributors\nSource: https://github.com/cozmo/jsQR\n" + js_notice
 browser = graph("wasm32-unknown-unknown", {"foregather-wasm"})
 host = subprocess.check_output(["rustc", "-vV"], text=True, cwd=root).split("host: ")[1].splitlines()[0]
-native = graph(host, {"foregather-kit", "foregather-server"})
-native.update(graph("x86_64-unknown-linux-gnu", {"foregather-kit", "foregather-server"}))
+native = graph(host, {"foregather-kit", "foregather-server", "foregather-ffi"})
+native.update(graph("x86_64-unknown-linux-gnu", {"foregather-kit", "foregather-server", "foregather-ffi"}))
 all_packages = {**native, **browser}
-(root / "THIRD_PARTY_LICENSES.txt").write_text(bundle(all_packages))
-(root / "packages/browser/THIRD_PARTY_LICENSES.txt").write_text(bundle(browser))
-for name in ["foregather-kit", "foregather-wasm", "foregather-server"]:
+jna_licence = "\n\nJNA 5.19.1; Apache-2.0 selected. Source: https://github.com/java-native-access/jna/tree/5.19.1\n" + (root / "packages/native/licenses/jna-Apache-2.0.txt").read_text()
+(root / "THIRD_PARTY_LICENSES.txt").write_text((bundle(all_packages) + qr_licences + jna_licence).rstrip() + "\n")
+(root / "packages/browser/THIRD_PARTY_LICENSES.txt").write_text((bundle(browser) + qr_licences).rstrip() + "\n")
+for name in ["foregather-kit", "foregather-wasm", "foregather-server", "foregather-ffi"]:
     (root / "crates" / name / "LICENSE").write_text((root / "LICENSE").read_text())
