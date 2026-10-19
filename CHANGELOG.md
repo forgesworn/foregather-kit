@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.6.0 - unreleased (bounded message exchange)
+## 0.6.0 - 2026-10-19 (bounded message exchange)
 
 * Add the separately versioned `foregather-exchange/1` profile: after both
   people accept the verification words, each endpoint may send up to 32 ordered
