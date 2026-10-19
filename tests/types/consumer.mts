@@ -4,7 +4,7 @@ import {
   createCharacterOffer, createCharacterPairing, createRendezvousCode, canonicalRendezvousCode, formatCharacterCode, accessSecretOdds,
   type Envelope, type Allocation, type LiveSession,
 } from '@forgesworn/foregather-kit';
-import {createPairingFlow,parseLiveSession,createLiveRelayClient,createCreationGrantClient,ForegatherTransportError,createPairingLink,parsePairingLink,validatePublicRoom,type PairingTransport,type LiveRoom} from '@forgesworn/foregather-kit';
+import {createPairingFlow,parseLiveSession,createLiveRelayClient,createCreationGrantClient,ForegatherTransportError,createPairingLink,parsePairingLink,validatePublicRoom,type PairingTransport,type PairingState,type LiveRoom} from '@forgesworn/foregather-kit';
 import * as storedOnly from '@forgesworn/foregather-kit/stored';
 import {createPairingQr,decodePairingQr,scanPairingCamera} from '@forgesworn/foregather-kit/qr';
 
@@ -80,6 +80,11 @@ const flow=createPairingFlow({...offer,namespace:'example.rooms',purpose:'bootst
 const flowWords:string=await flow.pair({signal});flow.verify({matches:true});const decrypted:true=(await flow.send({payload,signal})).decrypted;flow.cancel();flow.dispose();
 const recipientFlow=createPairingFlow({...charOffer,namespace:'example.rooms',purpose:'bootstrap',role:'recipient',now:()=>now,transport:receiving});
 const receivedBytes:Uint8Array=await recipientFlow.receive({signal});recipientFlow.dispose();
+const keptFlow=createPairingFlow({...offer,namespace:'example.rooms',purpose:'bootstrap',role:'inviter',now:()=>now,transport});
+const keptReceipt:true=(await keptFlow.send({payload,signal,keepOpen:true})).decrypted;const replyBytes:Uint8Array=await keptFlow.awaitReply({signal});keptFlow.dispose();
+const replyingFlow=createPairingFlow({...charOffer,namespace:'example.rooms',purpose:'bootstrap',role:'recipient',now:()=>now,transport:receiving});
+const keptBytes:Uint8Array=await replyingFlow.receive({signal,keepOpen:true});const replied:void=await replyingFlow.reply({payload:keptBytes,signal});replyingFlow.dispose();
+const replyState:PairingState='awaiting-reply';
 await liveRelay.delete({locator:session.locator,deleteToken:liveAllocation.delete_token,signal});
 const checkedSession:Readonly<LiveSession>=parseLiveSession({session,namespace:'example.rooms',purpose:'bootstrap',now});
 const linkConfig={baseUrl:'https://example.test/pair/',namespace:'example.rooms',purpose:'bootstrap',now};

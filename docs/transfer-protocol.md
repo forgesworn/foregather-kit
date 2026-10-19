@@ -33,3 +33,34 @@ The native core owns framing and receipt validation for browser and native
 bindings. Independent Python byte/SHA-256 vectors are frozen in
 `crates/foregather-kit/vectors/transfer-v1.json`. Their agreement and automated
 composition checks are not an independent security review.
+
+## Optional reply v1
+
+Profile: `foregather-transfer-reply/1`. After a transfer-v1 receipt, the
+recipient may return one bounded application message on the same confirmed
+channel, for example to say that a delivered link was used. Both endpoints opt
+in (`keepOpen` in the browser flow); a v1 endpoint never reads or sends it, and
+nothing in transfer v1 changes.
+
+A reply plaintext is
+`46 47 01 03 || transfer_id_16 || SHA256(invitation_bytes) || reply_bytes`,
+with at most 1,024 reply bytes (52 to 1,076 bytes in all). It is encrypted with
+the recipient's confirmed directional channel key at packet sequence one, after
+the receipt at sequence zero, and must arrive before the session deadline. The
+inviter authenticates/decrypts it, compares the 52-byte prefix with the
+expected type, identifier and invitation digest in constant time, and returns
+the reply bytes to the application. A receipt is never a reply, and a reply is
+bound to its own invitation.
+
+A reply proves only that the recipient endpoint that decrypted the invitation
+sent those bytes before the deadline. The relay can withhold it, so a missing
+reply must not be read as anything; applications keep their fallback. Reply
+bytes are uninterpreted and belong to the application's validator.
+
+Retries retransmit identical encrypted bytes, as for the receipt. A kept channel
+closes after the reply or at the deadline, whichever comes first; expiry or
+cancellation then rejects a pending wait with `expired` or `cancelled` while the
+delivered transfer keeps its outcome. Independent Python byte/SHA-256 vectors
+over the transfer-v1 invitation vectors are frozen in
+`crates/foregather-kit/vectors/transfer-reply-v1.json`. The browser flow and the
+Rust core implement it; native Swift/Kotlin bindings do not expose it yet.

@@ -1,0 +1,25 @@
+{
+  "profile": "foregather-transfer-reply/1",
+  "syntheticOnly": true,
+  "generatedBy": "Independent Python hashlib SHA-256 and byte framing over the transfer-v1 invitation vectors",
+  "vectors": [
+    {
+      "name": "empty",
+      "invitationFrame": "RkcBAQABAgMEBQYHCAkKCwwNDg8",
+      "reply": "",
+      "frame": "RkcBAwABAgMEBQYHCAkKCwwNDg_jsMRCmPwcFJr79MiZb7kkJ65B5GSbk0yklZkbeFK4VQ"
+    },
+    {
+      "name": "binary",
+      "invitationFrame": "RkcBAQABAgMEBQYHCAkKCwwNDg8A_wGA",
+      "reply": "AP8BgA",
+      "frame": "RkcBAwABAgMEBQYHCAkKCwwNDg_tyB9-TuNY-5HpS9m9dAecPcujb0DyyKNueuBWev7MjwD_AYA"
+    },
+    {
+      "name": "unicode",
+      "invitationFrame": "RkcBAQABAgMEBQYHCAkKCwwNDg9zeW50aGV0aWMgaW52aXRhdGlvbiDwn6uP",
+      "reply": "eyJ2IjoxLCJldmVudCI6ImRvd25sb2FkZWQiLCJub3RlIjoic3ludGhldGljIPCfq48ifQ",
+      "frame": "RkcBAwABAgMEBQYHCAkKCwwNDg8zS1VvzPLFcsIyfmkhJJ_IlA77eABjsEjkZOG4NLDn_3sidiI6MSwiZXZlbnQiOiJkb3dubG9hZGVkIiwibm90ZSI6InN5bnRoZXRpYyDwn6uPIn0"
+    }
+  ]
+}

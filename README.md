@@ -17,9 +17,10 @@ production security claims. Joystick has deployed an experimental integration;
 physical-device qualification and other app migrations remain separate work.
 This project has not received an independent security review.
 
-The browser transport patch is 0.4.1. Rust crates, native packages and relay
-binaries remain at 0.4.0 with unchanged frozen profiles; component versions and
-publication receipts are identified separately in each release.
+0.5.0 adds an optional transfer reply profile to the Rust core and browser
+package; native Swift/Kotlin bindings do not expose it yet. Frozen profiles are
+unchanged. Component versions and publication receipts are identified separately
+in each release.
 
 ## Packages
 

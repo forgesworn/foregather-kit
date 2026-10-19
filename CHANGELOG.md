@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.5.0 - 2026-10-19 (optional transfer reply)
+
+* Add the separately versioned `foregather-transfer-reply/1` profile: after the
+  receipt, the recipient may return one application message of at most 1,024
+  bytes, bound to the transfer identifier and the invitation's SHA-256, at
+  packet sequence one before the session deadline. Transfer v1 bytes, receipts
+  and frozen vectors are unchanged.
+* Rust: `Transfer::reply` and `Transfer::read_reply`. Browser: `keepOpen` on
+  `send`/`receive`, then `awaitReply()` or `reply()`, with `awaiting-reply`,
+  `replying` and `replied` progress. A kept channel closes after the reply or at
+  the deadline; the delivered transfer keeps its outcome.
+* Add independent Python reply vectors, tamper/binding/bound tests, flow tests
+  for retries, tampering and expiry, and TypeScript consumer coverage.
+* Native Swift/Kotlin bindings do not expose the reply yet.
+
 ## Browser 0.4.1 - 2026-10-13
 
 * Retry transient directory/poll reads at most twice without recreating pairing
