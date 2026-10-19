@@ -78,4 +78,28 @@ for case in encoding["vectors"]:
     bits = "".join(f"{encoding['alphabet'].index(c):05b}" for c in code)
     indexes = [1024 + len(code)] + [int(bits[i:i+11].ljust(11, "0"), 2) for i in range(0, len(bits), 11)]
     assert " ".join(words[i] for i in indexes) == case["canonicalWords"]
-print(json.dumps({"passed": True, "independentPythonSpake2": "0.9", "matchingHellos": True, "matchingKeysAndConfirmations": True, "bootstrapAndVerification": True, "characterEncodingVectors": True}))
+# foregather-exchange/1: frames and packets over the channel keys derived above.
+exchange = json.loads((root / "crates/foregather-kit/vectors/exchange-v1.json").read_text())
+assert exchange["profile"] == "foregather-exchange/1" and exchange["channel"] == "live-spake2-ed25519-v1.json"
+
+
+def exchange_frame(index, payload):
+    assert 0 <= index < 32 and len(payload) <= 16379
+    return bytes([0x46, 0x47, 0x02, 0x01, index]) + payload
+
+
+def payload_of(case):
+    return decode(case["payload"]) if case["payload"] else b""
+
+
+for case in exchange["frames"]:
+    assert encode(exchange_frame(case["index"], payload_of(case))) == case["frame"]
+next_index = {"inviter": 0, "recipient": 0}
+for case in exchange["packets"]:
+    role, index = case["role"], case["index"]
+    assert index == next_index[role]
+    next_index[role] += 1
+    seq = index.to_bytes(8, "big")
+    sealed = AESGCM(derive(role)).encrypt(bytes(4) + seq, exchange_frame(index, payload_of(case)), frame(s["profile"], transcript, role, seq))
+    assert case["packet"] == {"v": s["profile"], "seq": index, "ciphertext": encode(sealed)}
+print(json.dumps({"passed": True, "independentPythonSpake2": "0.9", "matchingHellos": True, "matchingKeysAndConfirmations": True, "bootstrapAndVerification": True, "characterEncodingVectors": True, "exchangeVectors": True}))

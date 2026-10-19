@@ -4,7 +4,7 @@ import {
   createCharacterOffer, createCharacterPairing, createRendezvousCode, canonicalRendezvousCode, formatCharacterCode, accessSecretOdds,
   type Envelope, type Allocation, type LiveSession,
 } from '@forgesworn/foregather-kit';
-import {createPairingFlow,parseLiveSession,createLiveRelayClient,createCreationGrantClient,ForegatherTransportError,createPairingLink,parsePairingLink,validatePublicRoom,type PairingTransport,type PairingState,type LiveRoom} from '@forgesworn/foregather-kit';
+import {createPairingFlow,parseLiveSession,createLiveRelayClient,createCreationGrantClient,ForegatherTransportError,createPairingLink,parsePairingLink,validatePublicRoom,type PairingTransport,type PairingState,type PairingExchange,type LiveRoom} from '@forgesworn/foregather-kit';
 import * as storedOnly from '@forgesworn/foregather-kit/stored';
 import {createPairingQr,decodePairingQr,scanPairingCamera} from '@forgesworn/foregather-kit/qr';
 
@@ -85,6 +85,11 @@ const keptReceipt:true=(await keptFlow.send({payload,signal,keepOpen:true})).dec
 const replyingFlow=createPairingFlow({...charOffer,namespace:'example.rooms',purpose:'bootstrap',role:'recipient',now:()=>now,transport:receiving});
 const keptBytes:Uint8Array=await replyingFlow.receive({signal,keepOpen:true});const replied:void=await replyingFlow.reply({payload:keptBytes,signal});replyingFlow.dispose();
 const replyState:PairingState='awaiting-reply';
+const exchangeFlow=createPairingFlow({...offer,namespace:'example.rooms',purpose:'bootstrap',role:'inviter',now:()=>now,transport});
+await exchangeFlow.pair({signal});exchangeFlow.verify({matches:true});const exchanging:PairingExchange=exchangeFlow.exchange();
+const exchangeSent:void=await exchanging.send({payload,signal});const exchangeBytes:Uint8Array=await exchanging.receive({signal});await exchanging.receive();
+const exchangeCounts:number=exchanging.sent+exchanging.received;exchanging.close();exchangeFlow.dispose();
+const exchangeStates:PairingState[]=['exchanging','closed'];
 await liveRelay.delete({locator:session.locator,deleteToken:liveAllocation.delete_token,signal});
 const checkedSession:Readonly<LiveSession>=parseLiveSession({session,namespace:'example.rooms',purpose:'bootstrap',now});
 const linkConfig={baseUrl:'https://example.test/pair/',namespace:'example.rooms',purpose:'bootstrap',now};

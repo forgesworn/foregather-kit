@@ -113,6 +113,9 @@ returns comparison words; `verify({matches:true})` must follow an explicit user
 comparison on both endpoints. The inviter calls `send({payload,signal})`; the
 recipient calls `receive({signal})`. Receiving/decrypting creates no membership.
 Cancelled, expired or failed flows are terminal and require fresh offers.
+Instead of `send`/`receive`, either role may call `exchange()` after verifying to
+carry up to 32 bounded messages each way until the deadline
+(`foregather-exchange/1`, 0.6.0).
 
 `createLiveRelayClient({apiUrl:'https://example/v1/'})` implements optional explicit
 HTTP allocation/lookup/claim/delete and role-specific transport. Creation tokens
@@ -129,5 +132,6 @@ Import `/stored` for a distinct smaller WASM module with stored codecs, resolver
 and grant client; it cannot expose the experimental PAKE API. All entries ship
 inside the same self-contained tarball with declarations and licence texts.
 
-See the repository's live-relay, creation-grants, public-handoff, transfer-protocol
-and native guides for bounds, frozen profiles, packaging and remaining gates.
+See the repository's live-relay, creation-grants, public-handoff,
+transfer-protocol, exchange-protocol and native guides for bounds, frozen
+profiles, packaging and remaining gates.

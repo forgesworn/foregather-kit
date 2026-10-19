@@ -44,6 +44,8 @@ use std::fmt;
 use url::Url;
 use zeroize::{Zeroize, Zeroizing};
 #[cfg(feature = "experimental-live")]
+pub mod exchange;
+#[cfg(feature = "experimental-live")]
 pub mod handoff;
 #[cfg(feature = "experimental-live")]
 pub mod transfer;

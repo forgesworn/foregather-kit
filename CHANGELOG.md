@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.6.0 - unreleased (bounded message exchange)
+
+* Add the separately versioned `foregather-exchange/1` profile: after both
+  people accept the verification words, each endpoint may send up to 32 ordered
+  messages of at most 16,379 bytes, framed `46 47 02 01 || index || payload`
+  with the index equal to the channel sequence, until the session deadline. It
+  fits the deployed relay's 32 packet slots per role; transfer v1, the reply
+  profile, live packets and all frozen vectors are unchanged.
+* Rust: `exchange::ExchangeChannel` (refuses a channel that carried any packet,
+  ends on an authenticated foreign frame) and `encode_message`/`decode_message`.
+  Browser: `flow.exchange()` returns `{sent, received, send, receive, close}`
+  with one send and one receive in flight, and `exchanging`/`closed` progress.
+* Add independent Python frame and packet vectors over the frozen live channel,
+  checked by `scripts/check-pake-reference.py`; Rust vector, tamper, binding,
+  bound and deadline tests; flow tests for round trips, limits, mixing with
+  transfer v1, tampering, retries, expiry, cancellation and the HTTP relay; and
+  TypeScript consumer coverage.
+* Native Swift/Kotlin bindings do not expose the exchange yet.
+
 ## 0.5.0 - 2026-10-19 (optional transfer reply)
 
 * Add the separately versioned `foregather-transfer-reply/1` profile: after the

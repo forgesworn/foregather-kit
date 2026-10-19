@@ -126,7 +126,9 @@ invitation frame/receipt. A receipt authenticates recipient decryption of exact
 bytes through the confirmed channel, not human consent, named identity or room
 admission. App validators and review remain mandatory. Transport retries reuse
 identical ciphertext or claim capabilities; they never reconstruct gates or
-reset counters/budgets. Failed or expired flows cannot restart.
+reset counters/budgets. Failed or expired flows cannot restart. The 0.6
+message exchange uses the same verified channel instead of a transfer: it
+proves sender and order within the deadline, not delivery, and exports no key.
 
 The durable relay stores public messages/ciphertext and purpose-separated
 capability hashes. Role-specific write authority, fixed expiry, write-once retry,
