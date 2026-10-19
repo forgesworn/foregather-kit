@@ -1,8 +1,8 @@
 import {createLivePairing,createCharacterPairing,parseLiveSession} from './index.mjs';
 import {delay,ForegatherTransportError} from './transport.mjs';
-import {create_transfer,transfer_receipt,transfer_payload,transfer_acknowledged,transfer_reply,transfer_read_reply} from './foregather_wasm.js';
+import {create_transfer,transfer_receipt,transfer_payload,transfer_acknowledged,transfer_reply,transfer_read_reply,exchange_encode,exchange_decode} from './foregather_wasm.js';
 
-const MAX_PAYLOAD=16364,MAX_REPLY=1024;
+const MAX_PAYLOAD=16364,MAX_REPLY=1024,MAX_EXCHANGE_PAYLOAD=16379,MAX_EXCHANGE_MESSAGES=32;
 const invalid=()=>{throw new Error('Invalid pairing operation');};
 function abortable(promise,signal) {
   return new Promise((resolve,reject)=>{
@@ -14,7 +14,9 @@ function abortable(promise,signal) {
 }
 /** One flow owns one gate. Retries send identical bytes; a failed flow is terminal.
  * keepOpen holds the confirmed channel after the transfer for one optional
- * foregather-transfer-reply/1 message, recipient to inviter, until the deadline. */
+ * foregather-transfer-reply/1 message, recipient to inviter, until the deadline.
+ * exchange() instead dedicates the verified channel to foregather-exchange/1:
+ * up to 32 ordered messages each way, one send and one receive in flight. */
 export function createPairingFlow({session,secretWords,secretCode,role,namespace,purpose,now,transport,onState}) {
   if(typeof now!=='function'||!transport||typeof transport.send!=='function'||typeof transport.receive!=='function'||onState!==undefined&&typeof onState!=='function')invalid();
   let lastNow=now();session=parseLiveSession({session,namespace,purpose,now:lastNow});
@@ -104,6 +106,46 @@ export function createPairingFlow({session,secretWords,secretCode,role,namespace
         try{encrypted=channel.seal({payload:frame,now:clock()});}finally{frame.fill(0);}
         await sendExact({kind:'packet',sequence:1,value:JSON.parse(encrypted)},signal);
         notify('replied');cleanup();
+      });
+    },
+    exchange() {
+      if(!verified||busy||state!=='ready'||controller.signal.aborted)invalid();clock();notify('exchanging');
+      let sent=0,received=0,sending=false,receiving=false;
+      const ended=()=>{if(controller.signal.aborted)throw controller.signal.reason;};
+      // Send and receive run independently; any failure or cancellation ends the whole exchange.
+      async function step(signal,work) {
+        const combined=signal?AbortSignal.any([signal,controller.signal]):controller.signal;
+        const abort=()=>{if(signal?.aborted)stop('cancelled');};combined.addEventListener('abort',abort,{once:true});
+        try {combined.throwIfAborted();clock();return await work(combined);}
+        catch(error){if(!controller.signal.aborted)stop(signal?.aborted?'cancelled':'failed');throw error;}
+        finally{combined.removeEventListener('abort',abort);}
+      }
+      return Object.freeze({
+        get sent(){return sent;},
+        get received(){return received;},
+        async send({payload,signal}) {
+          ended();if(sending||sent>=MAX_EXCHANGE_MESSAGES||!(payload instanceof Uint8Array)||payload.length>MAX_EXCHANGE_PAYLOAD)invalid();
+          sending=true;
+          try {
+            await step(signal,async signal=>{
+              const index=sent,frame=exchange_encode(index,payload);let packet;
+              try{packet=channel.seal({payload:frame,now:clock()});}finally{frame.fill(0);}
+              sent++;await sendExact({kind:'packet',sequence:index,value:JSON.parse(packet)},signal);
+            });
+          }finally{sending=false;}
+        },
+        async receive({signal}={}) {
+          ended();if(receiving||received>=MAX_EXCHANGE_MESSAGES)invalid();
+          receiving=true;
+          try {
+            return await step(signal,async signal=>{
+              const index=received,packet=await abortable(transport.receive({kind:'packet',sequence:index,signal}),signal);
+              const clear=channel.open({packet:JSON.stringify(packet),now:clock()});
+              try{const message=exchange_decode(index,clear);received++;return message;}finally{clear.fill(0);}
+            });
+          }finally{receiving=false;}
+        },
+        close() {if(controller.signal.aborted)return;notify('closed');controller.abort(new ForegatherTransportError('closed'));cleanup();},
       });
     },
     cancel(){stop('cancelled');},

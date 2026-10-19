@@ -17,6 +17,7 @@ in Rust/WASM. MIT. Copyright (c) 2026 TheCryptoDonkey. No required hosted servic
 | Limited delegated creation authority | [Creation grants](creation-grants.md) |
 | Public-only links, QR and camera cleanup | [Public handoff](public-handoff.md) |
 | Encrypted recipient-decrypted receipts | [Transfer framing](transfer-protocol.md) |
+| Bounded two-way messages on a verified channel | [Message exchange](exchange-protocol.md) |
 | Swift package/XCFramework and Android AAR | [Native bindings](native.md) |
 | Supported self-hosting layouts | [Deployment](../deploy/README.md) |
 | Seven-feature implementation and qualification | [Adoption status](adoption-status.md) |

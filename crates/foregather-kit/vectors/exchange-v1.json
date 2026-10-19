@@ -1,0 +1,78 @@
+{
+  "profile": "foregather-exchange/1",
+  "syntheticOnly": true,
+  "generatedBy": "Independent Python byte framing and cryptography 50.0.1 AES-256-GCM over the frozen live-spake2-ed25519-v1 channel keys",
+  "channel": "live-spake2-ed25519-v1.json",
+  "frames": [
+    {
+      "name": "empty",
+      "index": 0,
+      "payload": "",
+      "frame": "RkcCAQA"
+    },
+    {
+      "name": "binary",
+      "index": 1,
+      "payload": "AP8BgA",
+      "frame": "RkcCAQEA_wGA"
+    },
+    {
+      "name": "last-slot",
+      "index": 31,
+      "payload": "eyJ2IjoxLCJub3RlIjoic3ludGhldGljIPCfq48ifQ",
+      "frame": "RkcCAR97InYiOjEsIm5vdGUiOiJzeW50aGV0aWMg8J-rjyJ9"
+    }
+  ],
+  "packets": [
+    {
+      "role": "inviter",
+      "index": 0,
+      "payload": "eyJ2IjoxLCJldmVudCI6InN5bnRoZXRpYy1vZmZlciJ9",
+      "packet": {
+        "v": "foregather-live/spake2-ed25519/1",
+        "seq": 0,
+        "ciphertext": "0efWm8rY0VhItPR1Ti6k8O7kEnqO_hDZgZy_E8OFUtB05e3VFXHvbkxDy2zjtAxMwmoEeH72"
+      }
+    },
+    {
+      "role": "recipient",
+      "index": 0,
+      "payload": "eyJ2IjoxLCJldmVudCI6InN5bnRoZXRpYy1hbnN3ZXIifQ",
+      "packet": {
+        "v": "foregather-live/spake2-ed25519/1",
+        "seq": 0,
+        "ciphertext": "l5KVTSnvVeEcAAclLiLDROY7i7lT2wQYz4mwYCQI_U0qUUdKZUK1Xlp4Eioq7iugIjpuzRipNg"
+      }
+    },
+    {
+      "role": "inviter",
+      "index": 1,
+      "payload": "AP8BgA",
+      "packet": {
+        "v": "foregather-live/spake2-ed25519/1",
+        "seq": 1,
+        "ciphertext": "kBYlTu9MIYWQk5Oi1IzT8AjmpWpzK-YXeQ"
+      }
+    },
+    {
+      "role": "recipient",
+      "index": 1,
+      "payload": "c3ludGhldGljIPCfq48",
+      "packet": {
+        "v": "foregather-live/spake2-ed25519/1",
+        "seq": 1,
+        "ciphertext": "vg93OQS570xQSHDufC9_YRAZ4EVfTBgQxFj0CCWYsfeF0ZI"
+      }
+    },
+    {
+      "role": "inviter",
+      "index": 2,
+      "payload": "",
+      "packet": {
+        "v": "foregather-live/spake2-ed25519/1",
+        "seq": 2,
+        "ciphertext": "L8jIMSplFRH1Zlzkun4qDz8iVhRT"
+      }
+    }
+  ]
+}

@@ -83,6 +83,18 @@ pub fn transfer_read_reply(frame: &[u8], reply: &[u8]) -> Result<Vec<u8>, JsValu
         .to_vec())
 }
 #[wasm_bindgen]
+pub fn exchange_encode(index: u8, payload: &[u8]) -> Result<Vec<u8>, JsValue> {
+    Ok(foregather_kit::exchange::encode_message(index, payload)
+        .map_err(error)?
+        .to_vec())
+}
+#[wasm_bindgen]
+pub fn exchange_decode(index: u8, frame: &[u8]) -> Result<Vec<u8>, JsValue> {
+    Ok(foregather_kit::exchange::decode_message(index, frame)
+        .map_err(error)?
+        .to_vec())
+}
+#[wasm_bindgen]
 pub fn validate_live_session(
     value: &str,
     namespace: &str,

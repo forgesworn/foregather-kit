@@ -18,9 +18,11 @@ physical-device qualification and other app migrations remain separate work.
 This project has not received an independent security review.
 
 0.5.0 adds an optional transfer reply profile to the Rust core and browser
-package; native Swift/Kotlin bindings do not expose it yet. Frozen profiles are
-unchanged. Component versions and publication receipts are identified separately
-in each release.
+package, and 0.6.0 a bounded two-way
+[message exchange](docs/exchange-protocol.md) on a verified channel. Native
+Swift/Kotlin bindings expose neither yet. Frozen profiles are unchanged.
+Component versions and publication receipts are identified separately in each
+release.
 
 ## Packages
 
@@ -48,7 +50,7 @@ crates.io availability. Install the release tarball directly when the npm
 registry version is unavailable; its runtime assets are served by your own app.
 
 The adoption APIs require at least 0.4.0; the optional transfer reply requires
-0.5.0. Browser 0.5.0 ships as an asset of the
+0.5.0 and the message exchange 0.6.0. Browser 0.5.0 ships as an asset of the
 [0.5.0 release](https://github.com/forgesworn/foregather-kit/releases/tag/v0.5.0),
 whose browser flow tests passed against the exact hosted archive. It is not on
 npm, where 0.4.1 is the latest version (verified against the

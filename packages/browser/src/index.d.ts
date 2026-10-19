@@ -49,11 +49,25 @@ export function formatCharacterCode(code: string): string;
 export function accessSecretOdds(input: {format: 'words' | 'characters'; count: number; attempts?: number}): Readonly<{bits: number; possibilities: bigint; guesses: number}>;
 
 export function parseLiveSession(input: {session: LiveSession; namespace: string; purpose: string; now: number}): Readonly<LiveSession>;
-export type PairingState = 'idle' | 'waiting' | 'confirming' | 'verifying' | 'ready' | 'sending' | 'awaiting-receipt' | 'delivered' | 'receiving' | 'received' | 'awaiting-reply' | 'replying' | 'replied' | 'expired' | 'cancelled' | 'failed';
+export type PairingState = 'idle' | 'waiting' | 'confirming' | 'verifying' | 'ready' | 'sending' | 'awaiting-receipt' | 'delivered' | 'receiving' | 'received' | 'awaiting-reply' | 'replying' | 'replied' | 'exchanging' | 'closed' | 'expired' | 'cancelled' | 'failed';
 export interface PairingProgress { readonly state: PairingState; readonly expires: number }
 export type LiveMessage = {kind:'hello' | 'proof'; value:string; signal?:AbortSignal} | {kind:'packet'; sequence:number; value:unknown; signal?:AbortSignal};
 export type LiveReceive = {kind:'hello' | 'proof'; signal?:AbortSignal} | {kind:'packet'; sequence:number; signal?:AbortSignal};
 export interface PairingTransport { send(input:LiveMessage):Promise<void>; receive(input:LiveReceive):Promise<unknown>; dispose?():void }
+/** foregather-exchange/1 on a verified channel: up to 32 ordered messages each way until the deadline.
+ * One send and one receive may be in flight together. Failure, cancellation or expiry ends the exchange. */
+export interface PairingExchange {
+  /** Messages sent so far; the next one uses packet sequence `sent`. */
+  readonly sent:number;
+  /** Messages received so far; the next one is read from packet sequence `received`. */
+  readonly received:number;
+  /** Send the next message of at most 16,379 bytes. */
+  send(input:{payload:Uint8Array;signal?:AbortSignal}):Promise<void>;
+  /** Wait for the peer's next message. */
+  receive(input?:{signal?:AbortSignal}):Promise<Uint8Array>;
+  /** End the exchange here; pending calls reject with ForegatherTransportError kind `closed`. */
+  close():void;
+}
 export interface PairingFlow {
   readonly state:PairingState;
   pair(input?:{signal?:AbortSignal}):Promise<string>;
@@ -65,6 +79,8 @@ export interface PairingFlow {
   awaitReply(input?:{signal?:AbortSignal}):Promise<Uint8Array>;
   /** Recipient, after receive({keepOpen:true}): one reply of at most 1,024 bytes. */
   reply(input:{payload:Uint8Array;signal?:AbortSignal}):Promise<void>;
+  /** Either role, after verify({matches:true}) and instead of send/receive: dedicate the channel to foregather-exchange/1. */
+  exchange():PairingExchange;
   cancel():void;
   dispose():void;
 }

@@ -600,6 +600,10 @@ impl Channel {
         }
         Ok(())
     }
+    /// Next send and receive sequence numbers, for framing profiles that bind them.
+    pub(crate) fn sequences(&self) -> (u64, u64) {
+        (self.sent, self.received)
+    }
     fn aad(&self, role: Role, seq: u64) -> Vec<u8> {
         framed(&[
             PROFILE.as_bytes(),
@@ -683,7 +687,7 @@ impl Channel {
 }
 
 #[cfg(test)]
-mod vectors {
+pub(crate) mod vectors {
     use super::*;
     struct FixtureRng(u8);
     impl CryptoRng for FixtureRng {}
@@ -711,6 +715,33 @@ mod vectors {
             self.fill_bytes(bytes);
             Ok(())
         }
+    }
+    /// Fresh inviter and recipient channels of the frozen live vector, at
+    /// sequence zero both ways, for composition vectors over its keys.
+    pub(crate) fn fixture_channels() -> (Channel, Channel) {
+        let now = 1_800_000_000;
+        let s = Session {
+            profile: PROFILE.into(),
+            namespace: "example.rooms".into(),
+            purpose: "bootstrap".into(),
+            locator: encode(&[7; 16]),
+            issued: now,
+            expires: now + 120,
+        };
+        let secret = "jazz earth glacier";
+        let mut a =
+            PairingGate::new(s.clone(), PairingSecret::parse(secret).unwrap(), 1, now).unwrap();
+        let mut b = PairingGate::new(s, PairingSecret::parse(secret).unwrap(), 1, now).unwrap();
+        let ax = a.start(Role::Inviter, now, &mut FixtureRng(1)).unwrap();
+        let bx = b.start(Role::Recipient, now, &mut FixtureRng(65)).unwrap();
+        let (ah, bh) = (ax.hello(), bx.hello());
+        let ap = ax.finish(&bh, now).unwrap();
+        let bp = bx.finish(&ah, now).unwrap();
+        let (aproof, bproof) = (ap.confirmation().unwrap(), bp.confirmation().unwrap());
+        (
+            ap.confirm(&bproof, now).unwrap(),
+            bp.confirm(&aproof, now).unwrap(),
+        )
     }
     #[test]
     fn frozen_live_transcript_confirmation_and_bootstrap() {
