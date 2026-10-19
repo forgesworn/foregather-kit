@@ -1,5 +1,22 @@
 # Validation evidence
 
+## 0.6.0 bounded message exchange (2026-10-19)
+
+The separately versioned `foregather-exchange/1` profile dedicates a confirmed,
+word-verified live channel to up to 32 ordered messages each way of at most
+16,379 bytes, with each message's index bound to its channel sequence.
+Independent Python frame and packet vectors over the frozen live channel keys,
+eight Rust tests (vectors, tampering, binding, the 32-message and size bounds,
+the deadline, refusing a channel that carried a transfer) and nine browser
+exchange tests (round trips, limits, mixing with transfer v1, tampering,
+identical-ciphertext retries, expiry, cancellation, the HTTP relay, WASM framing
+against the Python vectors) pass, with `npm run check` locally and merged-head
+CI (verify 39336167990, native bindings 39336168026). The 17 browser flow tests
+and 9 exchange tests pass against the exact hosted 0.6.0 browser archive. Live,
+transfer, reply and stored bytes and every frozen vector are unchanged. The
+archive is a GitHub release asset only; npm publication, native bindings for
+the exchange, physical devices and independent review remain separate claims.
+
 ## 0.5.0 optional transfer reply (2026-10-19)
 
 The separately versioned `foregather-transfer-reply/1` profile lets a recipient
