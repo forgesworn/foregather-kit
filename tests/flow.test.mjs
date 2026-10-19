@@ -4,8 +4,11 @@ import {readFileSync} from 'node:fs';
 import {init,createLiveOffer,createCharacterOffer,createPairingFlow,createLiveRelayClient,ForegatherTransportError} from '../packages/browser/dist/index.mjs';
 await init({module_or_path:readFileSync(new URL('../packages/browser/dist/foregather_wasm_bg.wasm',import.meta.url))});
 const namespace='test.flows',purpose='invitation',now=()=>1800000000;
+// Real elapsed time in whole seconds from a fixed base, started by the first read. A short lifetime
+// then lasts its full length from flow creation, whichever wall-clock second the test begins in.
+const elapsedClock=()=>{let start;return()=>{start??=performance.now();return now()+Math.floor((performance.now()-start)/1000);};};
 test('expiry cancels an unresponsive transport and cannot restart the spent flow',async()=>{
-  const current=()=>Math.floor(Date.now()/1000),offer=createLiveOffer({namespace,purpose,now:current(),lifetime:1});
+  const current=elapsedClock(),offer=createLiveOffer({namespace,purpose,now:now(),lifetime:1});
   const flow=createPairingFlow({...offer,namespace,purpose,role:'inviter',now:current,transport:{send:async()=>{},receive:()=>new Promise(()=>{})}});
   const watchdog=setTimeout(()=>flow.cancel(),2500);
   try{await assert.rejects(flow.pair());assert.equal(flow.state,'expired');await assert.rejects(flow.pair());}finally{clearTimeout(watchdog);flow.dispose();}
@@ -112,7 +115,7 @@ test('HTTP read recovery keeps one exchange and packet counter through the compl
   }finally{a.dispose();b.dispose();}
 });
 function pollingFlow(fetch,{current=now,lifetime=120}={}) {
-  const offer=createLiveOffer({namespace,purpose,now:current(),lifetime});
+  const offer=createLiveOffer({namespace,purpose,now:now(),lifetime});
   const relay=createLiveRelayClient({apiUrl:'https://example.test/v1/',fetch});
   return createPairingFlow({...offer,namespace,purpose,role:'inviter',now:current,transport:relay.inviter({allocation:{room:{session:offer.session,secret_format:'words'},inviter_token:Buffer.alloc(32,1).toString('base64url')}})});
 }
@@ -133,13 +136,13 @@ test('cancelling HTTP retry backoff is terminal and sends no additional requests
   try{await assert.rejects(flow.pair({signal:controller.signal}));assert.equal(flow.state,'cancelled');assert.equal(reads,1);await assert.rejects(flow.pair());assert.equal(reads,1);}finally{clearTimeout(timer);flow.dispose();}
 });
 test('a read retry cannot extend the original pairing expiry',async()=>{
-  let reads=0,requestSignal;const current=()=>Math.floor(Date.now()/1000);
+  let reads=0,requestSignal;const current=elapsedClock();
   const flow=pollingFlow(async(_url,options)=>{
     if(options.method==='PUT')return new Response(null,{status:204});reads++;
     if(reads===1)return new Response(null,{status:503});
     requestSignal=options.signal;return new Promise((resolve,reject)=>options.signal.addEventListener('abort',()=>reject(options.signal.reason),{once:true}));
-  },{current,lifetime:1});
-  const watchdog=setTimeout(()=>flow.cancel(),2500);
+  },{current,lifetime:2});
+  const watchdog=setTimeout(()=>flow.cancel(),4500);
   try{await assert.rejects(flow.pair());assert.equal(flow.state,'expired');assert.equal(reads,2);assert.equal(requestSignal.aborted,true);await assert.rejects(flow.pair());assert.equal(reads,2);}finally{clearTimeout(watchdog);flow.dispose();}
 });
 async function delivered(options={}) {
@@ -179,7 +182,7 @@ test('an uncertain reply upload retries identical ciphertext on sequence one',as
   const writes=t.sent.filter(m=>m.role==='recipient'&&m.kind==='packet'&&m.sequence===1);assert.equal(writes.length,2);assert.deepEqual(writes[0].value,writes[1].value);
 });
 test('a kept channel closes at the deadline; the delivered transfer keeps its state',async()=>{
-  const current=()=>Math.floor(Date.now()/1000),offer=createLiveOffer({namespace,purpose,now:current(),lifetime:2}),t=transports();
+  const current=elapsedClock(),offer=createLiveOffer({namespace,purpose,now:now(),lifetime:2}),t=transports();
   const base={...offer,namespace,purpose,now:current};
   const a=createPairingFlow({...base,role:'inviter',transport:t.a}),b=createPairingFlow({...base,role:'recipient',transport:t.b});
   const watchdog=setTimeout(()=>{a.cancel();b.cancel();},4500);
