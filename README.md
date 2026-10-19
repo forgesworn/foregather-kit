@@ -50,20 +50,20 @@ crates.io availability. Install the release tarball directly when the npm
 registry version is unavailable; its runtime assets are served by your own app.
 
 The adoption APIs require at least 0.4.0; the optional transfer reply requires
-0.5.0 and the message exchange 0.6.0. Browser 0.5.0 ships as an asset of the
-[0.5.0 release](https://github.com/forgesworn/foregather-kit/releases/tag/v0.5.0),
-whose browser flow tests passed against the exact hosted archive. It is not on
+0.5.0 and the message exchange 0.6.0. Browser 0.6.0 ships as an asset of the
+[0.6.0 release](https://github.com/forgesworn/foregather-kit/releases/tag/v0.6.0),
+whose browser flow and exchange tests passed against the exact hosted archive. It is not on
 npm, where 0.4.1 is the latest version (verified against the
 [0.4.1 release](https://github.com/forgesworn/foregather-kit/releases/tag/v0.4.1)).
 Native Swift/Kotlin archives remain at 0.4.0.
 Run `npm pack ./packages/browser` to package a source checkout locally.
 
 ```sh
-npm install https://github.com/forgesworn/foregather-kit/releases/download/v0.5.0/forgesworn-foregather-kit-0.5.0.tgz
-# Or the npm registry's 0.4.1, without the transfer reply:
+npm install https://github.com/forgesworn/foregather-kit/releases/download/v0.6.0/forgesworn-foregather-kit-0.6.0.tgz
+# Or the npm registry's 0.4.1, without the transfer reply or the exchange:
 # npm install @forgesworn/foregather-kit@0.4.1
 # Build the self-hosted resolver directly from the tagged source:
-cargo install --git https://github.com/forgesworn/foregather-kit --tag v0.5.0 --locked foregather-server
+cargo install --git https://github.com/forgesworn/foregather-kit --tag v0.6.0 --locked foregather-server
 ```
 
 Private security reports use
