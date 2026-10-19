@@ -1,5 +1,20 @@
 # Validation evidence
 
+## 0.5.0 optional transfer reply (2026-10-19)
+
+The separately versioned `foregather-transfer-reply/1` profile lets a recipient
+return one bounded application message after the receipt. Independent Python
+vectors over the transfer-v1 invitation vectors, Rust tamper, binding and bound
+tests, and five browser flow tests (round trip on sequence one, `keepOpen`
+required on both ends, tampered reply, identical-ciphertext retry, expiry while
+kept) pass, with `npm run check` locally and merged-head CI (verify 39235199140,
+native bindings 39235199167). The 17 browser flow tests pass against the exact
+hosted 0.5.0 browser archive. Transfer v1 bytes and frozen vectors are
+unchanged. Wildbloom's recipient page uses the reply in production, covered by
+its own acceptance checks. The archive is a GitHub release asset only; npm
+publication, native bindings for the reply, physical devices and independent
+review remain separate claims.
+
 ## Browser 0.4.1 transport hardening — 2026-10-13
 
 The browser transport recovers transient HTTP/network read failures with three
