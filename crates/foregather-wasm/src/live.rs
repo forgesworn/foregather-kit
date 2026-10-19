@@ -67,6 +67,22 @@ pub fn transfer_acknowledged(frame: &[u8], receipt: &[u8]) -> Result<(), JsValue
         .map_err(error)
 }
 #[wasm_bindgen]
+pub fn transfer_reply(frame: &[u8], message: &[u8]) -> Result<Vec<u8>, JsValue> {
+    Ok(foregather_kit::transfer::Transfer::parse(frame)
+        .map_err(error)?
+        .reply(message)
+        .map_err(error)?
+        .to_vec())
+}
+#[wasm_bindgen]
+pub fn transfer_read_reply(frame: &[u8], reply: &[u8]) -> Result<Vec<u8>, JsValue> {
+    Ok(foregather_kit::transfer::Transfer::parse(frame)
+        .map_err(error)?
+        .read_reply(reply)
+        .map_err(error)?
+        .to_vec())
+}
+#[wasm_bindgen]
 pub fn validate_live_session(
     value: &str,
     namespace: &str,

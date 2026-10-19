@@ -49,7 +49,7 @@ export function formatCharacterCode(code: string): string;
 export function accessSecretOdds(input: {format: 'words' | 'characters'; count: number; attempts?: number}): Readonly<{bits: number; possibilities: bigint; guesses: number}>;
 
 export function parseLiveSession(input: {session: LiveSession; namespace: string; purpose: string; now: number}): Readonly<LiveSession>;
-export type PairingState = 'idle' | 'waiting' | 'confirming' | 'verifying' | 'ready' | 'sending' | 'awaiting-receipt' | 'delivered' | 'receiving' | 'received' | 'expired' | 'cancelled' | 'failed';
+export type PairingState = 'idle' | 'waiting' | 'confirming' | 'verifying' | 'ready' | 'sending' | 'awaiting-receipt' | 'delivered' | 'receiving' | 'received' | 'awaiting-reply' | 'replying' | 'replied' | 'expired' | 'cancelled' | 'failed';
 export interface PairingProgress { readonly state: PairingState; readonly expires: number }
 export type LiveMessage = {kind:'hello' | 'proof'; value:string; signal?:AbortSignal} | {kind:'packet'; sequence:number; value:unknown; signal?:AbortSignal};
 export type LiveReceive = {kind:'hello' | 'proof'; signal?:AbortSignal} | {kind:'packet'; sequence:number; signal?:AbortSignal};
@@ -58,8 +58,13 @@ export interface PairingFlow {
   readonly state:PairingState;
   pair(input?:{signal?:AbortSignal}):Promise<string>;
   verify(input:{matches:boolean}):void;
-  send(input:{payload:Uint8Array;signal?:AbortSignal}):Promise<Readonly<{decrypted:true}>>;
-  receive(input?:{signal?:AbortSignal}):Promise<Uint8Array>;
+  /** keepOpen holds the channel for one optional foregather-transfer-reply/1 message until the deadline. */
+  send(input:{payload:Uint8Array;signal?:AbortSignal;keepOpen?:boolean}):Promise<Readonly<{decrypted:true}>>;
+  receive(input?:{signal?:AbortSignal;keepOpen?:boolean}):Promise<Uint8Array>;
+  /** Inviter, after send({keepOpen:true}): the recipient's reply bytes, bound to this exact invitation. */
+  awaitReply(input?:{signal?:AbortSignal}):Promise<Uint8Array>;
+  /** Recipient, after receive({keepOpen:true}): one reply of at most 1,024 bytes. */
+  reply(input:{payload:Uint8Array;signal?:AbortSignal}):Promise<void>;
   cancel():void;
   dispose():void;
 }

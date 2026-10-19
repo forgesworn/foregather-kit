@@ -1,8 +1,8 @@
 import {createLivePairing,createCharacterPairing,parseLiveSession} from './index.mjs';
 import {delay,ForegatherTransportError} from './transport.mjs';
-import {create_transfer,transfer_receipt,transfer_payload,transfer_acknowledged} from './foregather_wasm.js';
+import {create_transfer,transfer_receipt,transfer_payload,transfer_acknowledged,transfer_reply,transfer_read_reply} from './foregather_wasm.js';
 
-const MAX_PAYLOAD=16364;
+const MAX_PAYLOAD=16364,MAX_REPLY=1024;
 const invalid=()=>{throw new Error('Invalid pairing operation');};
 function abortable(promise,signal) {
   return new Promise((resolve,reject)=>{
@@ -12,16 +12,22 @@ function abortable(promise,signal) {
     Promise.resolve(promise).then(resolve,reject).finally(()=>signal.removeEventListener('abort',abort));
   });
 }
-/** One flow owns one gate. Retries send identical bytes; a failed flow is terminal. */
+/** One flow owns one gate. Retries send identical bytes; a failed flow is terminal.
+ * keepOpen holds the confirmed channel after the transfer for one optional
+ * foregather-transfer-reply/1 message, recipient to inviter, until the deadline. */
 export function createPairingFlow({session,secretWords,secretCode,role,namespace,purpose,now,transport,onState}) {
   if(typeof now!=='function'||!transport||typeof transport.send!=='function'||typeof transport.receive!=='function'||onState!==undefined&&typeof onState!=='function')invalid();
   let lastNow=now();session=parseLiveSession({session,namespace,purpose,now:lastNow});
   if((secretWords===undefined)===(secretCode===undefined))invalid();
   const gate=(secretCode===undefined?createLivePairing:createCharacterPairing)({session,secretWords,secretCode,role,namespace,purpose,now:lastNow,attempts:1});
-  const controller=new AbortController();let channel,exchange,pending,state='idle',busy=false,verified=false;
+  const controller=new AbortController();let channel,exchange,pending,kept,ended,state='idle',busy=false,verified=false;
   const notify=next=>{state=next;try{onState?.(Object.freeze({state,expires:session.expires}));}catch{/* Presentation callbacks cannot affect protocol state. */}};
-  const cleanup=()=>{clearTimeout(timer);channel?.dispose();exchange?.dispose();pending?.dispose();gate.dispose();try{transport.dispose?.();}catch{/* Transport teardown cannot keep a cryptographic state alive. */}};
-  const stop=next=>{if(controller.signal.aborted||['delivered','received'].includes(state))return;notify(next);controller.abort(new ForegatherTransportError(next));cleanup();};
+  const cleanup=()=>{clearTimeout(timer);kept?.fill(0);kept=undefined;channel?.dispose();exchange?.dispose();pending?.dispose();gate.dispose();try{transport.dispose?.();}catch{/* Transport teardown cannot keep a cryptographic state alive. */}};
+  const stop=next=>{if(controller.signal.aborted)return;
+    // A finished transfer keeps its state; a channel kept open for a reply closes.
+    if(['delivered','received','replied'].includes(state)){if(kept){ended=next;controller.abort(new ForegatherTransportError(next));cleanup();}return;}
+    notify(next);controller.abort(new ForegatherTransportError(next));cleanup();};
+  const keptOpen=()=>{if(kept)return;if(ended)throw new ForegatherTransportError(ended);invalid();};
   const timer=setTimeout(()=>stop('expired'),Math.max(0,(session.expires-lastNow)*1000));timer.unref?.();
   const clock=()=>{const value=now();if(!Number.isSafeInteger(value)||value<lastNow)invalid();lastNow=value;if(value>=session.expires){stop('expired');throw controller.signal.reason;}return value;};
   const retryable=error=>error instanceof TypeError||error?.kind==='timeout'||error?.kind==='http'&&[408,429,502,503,504].includes(error.status);
@@ -52,8 +58,8 @@ export function createPairingFlow({session,secretWords,secretCode,role,namespace
       const words=channel.verificationWords({now:clock()});notify('verifying');return words;
     });},
     verify({matches}) {if(state!=='verifying'||busy||typeof matches!=='boolean')invalid();clock();if(!matches){stop('cancelled');return;}verified=true;notify('ready');},
-    async send({payload,signal}) {
-      if(role!=='inviter'||!verified||!(payload instanceof Uint8Array)||payload.length>MAX_PAYLOAD)invalid();
+    async send({payload,signal,keepOpen=false}) {
+      if(role!=='inviter'||!verified||!(payload instanceof Uint8Array)||payload.length>MAX_PAYLOAD||typeof keepOpen!=='boolean')invalid();
       return operation(['ready'],signal,async signal=>{
         notify('sending');const transfer=create_transfer(payload);
         try {
@@ -62,12 +68,13 @@ export function createPairingFlow({session,secretWords,secretCode,role,namespace
           const reply=await abortable(transport.receive({kind:'packet',sequence:0,signal}),signal);
           const clear=channel.open({packet:JSON.stringify(reply),now:clock()});
           try{transfer_acknowledged(transfer,clear);}finally{clear.fill(0);}
+          if(keepOpen)kept=transfer.slice();
         }finally{transfer.fill(0);}
-        notify('delivered');cleanup();return Object.freeze({decrypted:true});
+        notify('delivered');if(!keepOpen)cleanup();return Object.freeze({decrypted:true});
       });
     },
-    async receive({signal}={}) {
-      if(role!=='recipient'||!verified)invalid();
+    async receive({signal,keepOpen=false}={}) {
+      if(role!=='recipient'||!verified||typeof keepOpen!=='boolean')invalid();
       return operation(['ready'],signal,async signal=>{
         notify('receiving');const packet=await abortable(transport.receive({kind:'packet',sequence:0,signal}),signal);
         const clear=channel.open({packet:JSON.stringify(packet),now:clock()});let payload;
@@ -75,9 +82,28 @@ export function createPairingFlow({session,secretWords,secretCode,role,namespace
           payload=transfer_payload(clear);const receipt=transfer_receipt(clear);let encrypted;
           try{encrypted=channel.seal({payload:receipt,now:clock()});}finally{receipt.fill(0);}
           await sendExact({kind:'packet',sequence:0,value:JSON.parse(encrypted)},signal);
-          notify('received');cleanup();return payload;
+          if(keepOpen)kept=clear.slice();
+          notify('received');if(!keepOpen)cleanup();return payload;
         }catch(error){payload?.fill(0);throw error;}
         finally{clear.fill(0);}
+      });
+    },
+    async awaitReply({signal}={}) {
+      if(role!=='inviter')invalid();keptOpen();
+      return operation(['delivered'],signal,async signal=>{
+        notify('awaiting-reply');const packet=await abortable(transport.receive({kind:'packet',sequence:1,signal}),signal);
+        const clear=channel.open({packet:JSON.stringify(packet),now:clock()});let message;
+        try{message=transfer_read_reply(kept,clear);}finally{clear.fill(0);}
+        notify('replied');cleanup();return message;
+      });
+    },
+    async reply({payload,signal}) {
+      if(role!=='recipient'||!(payload instanceof Uint8Array)||payload.length>MAX_REPLY)invalid();keptOpen();
+      return operation(['received'],signal,async signal=>{
+        notify('replying');const frame=transfer_reply(kept,payload);let encrypted;
+        try{encrypted=channel.seal({payload:frame,now:clock()});}finally{frame.fill(0);}
+        await sendExact({kind:'packet',sequence:1,value:JSON.parse(encrypted)},signal);
+        notify('replied');cleanup();
       });
     },
     cancel(){stop('cancelled');},

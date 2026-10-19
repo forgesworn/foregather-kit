@@ -1,6 +1,9 @@
 //! Versioned invitation-transfer framing and a recipient-decrypted receipt.
 //! These plaintext frames travel only inside a confirmed live channel. A receipt
 //! establishes decryption, not application validation, review or admission.
+//!
+//! The separately versioned reply profile lets the recipient return one bounded
+//! application message bound to the exact invitation, after the receipt.
 use crate::{InvalidInvitation, Result};
 use rand_core::{CryptoRng, RngCore};
 use sha2::{Digest, Sha256};
@@ -11,8 +14,14 @@ use zeroize::Zeroizing;
 pub const PROFILE: &str = "foregather-transfer/1";
 /// Largest invitation fitting the live channel's 16-KiB plaintext bound.
 pub const MAX_PAYLOAD: usize = 16364;
+/// Optional reply profile; both endpoints opt in, it is never inferred from v1.
+pub const REPLY_PROFILE: &str = "foregather-transfer-reply/1";
+/// Largest application reply.
+pub const MAX_REPLY: usize = 1024;
 const INVITATION: [u8; 4] = [70, 71, 1, 1];
 const RECEIPT: [u8; 4] = [70, 71, 1, 2];
+const REPLY: [u8; 4] = [70, 71, 1, 3];
+const BOUND: usize = 52;
 
 /// One invitation, a fresh transfer identifier and its expected receipt.
 pub struct Transfer {
@@ -54,19 +63,43 @@ impl Transfer {
     pub fn payload(&self) -> &[u8] {
         &self.payload
     }
-    /// Bind a decryption receipt to the identifier and SHA-256 of this exact payload.
-    pub fn receipt(&self) -> Zeroizing<Vec<u8>> {
-        let mut bytes = Zeroizing::new(Vec::with_capacity(52));
-        bytes.extend_from_slice(&RECEIPT);
+    /// Type, identifier and SHA-256 of this exact payload.
+    fn bound(&self, kind: [u8; 4], extra: usize) -> Zeroizing<Vec<u8>> {
+        let mut bytes = Zeroizing::new(Vec::with_capacity(BOUND + extra));
+        bytes.extend_from_slice(&kind);
         bytes.extend_from_slice(&self.id);
         bytes.extend_from_slice(&Sha256::digest(&self.payload));
         bytes
     }
+    /// Bind a decryption receipt to the identifier and SHA-256 of this exact payload.
+    pub fn receipt(&self) -> Zeroizing<Vec<u8>> {
+        self.bound(RECEIPT, 0)
+    }
     /// Authenticate receipt framing/content after the live channel authenticates its sender.
     pub fn acknowledged(&self, receipt: &[u8]) -> Result<()> {
-        if receipt.len() != 52 || !bool::from(self.receipt().as_slice().ct_eq(receipt)) {
+        if receipt.len() != BOUND || !bool::from(self.receipt().as_slice().ct_eq(receipt)) {
             return Err(InvalidInvitation);
         }
         Ok(())
+    }
+    /// Recipient, reply profile: frame one application reply of at most
+    /// [`MAX_REPLY`] bytes, bound like the receipt to this exact invitation.
+    pub fn reply(&self, message: &[u8]) -> Result<Zeroizing<Vec<u8>>> {
+        if message.len() > MAX_REPLY {
+            return Err(InvalidInvitation);
+        }
+        let mut bytes = self.bound(REPLY, message.len());
+        bytes.extend_from_slice(message);
+        Ok(bytes)
+    }
+    /// Inviter, reply profile: authenticate the framing and binding after the
+    /// live channel authenticates its sender, and return the application bytes.
+    pub fn read_reply(&self, frame: &[u8]) -> Result<Zeroizing<Vec<u8>>> {
+        if !(BOUND..=BOUND + MAX_REPLY).contains(&frame.len())
+            || !bool::from(self.bound(REPLY, 0).as_slice().ct_eq(&frame[..BOUND]))
+        {
+            return Err(InvalidInvitation);
+        }
+        Ok(Zeroizing::new(frame[BOUND..].to_vec()))
     }
 }

@@ -142,3 +142,52 @@ test('a read retry cannot extend the original pairing expiry',async()=>{
   const watchdog=setTimeout(()=>flow.cancel(),2500);
   try{await assert.rejects(flow.pair());assert.equal(flow.state,'expired');assert.equal(reads,2);assert.equal(requestSignal.aborted,true);await assert.rejects(flow.pair());assert.equal(reads,2);}finally{clearTimeout(watchdog);flow.dispose();}
 });
+async function delivered(options={}) {
+  const {a,b,t}=flows(options);await Promise.all([a.pair(),b.pair()]);a.verify({matches:true});b.verify({matches:true});
+  const payload=new TextEncoder().encode('synthetic invitation for a reply');
+  const [receipt,received]=await Promise.all([a.send({payload,keepOpen:true}),b.receive({keepOpen:true})]);
+  assert.deepEqual(receipt,{decrypted:true});assert.deepEqual(received,payload);assert.equal(a.state,'delivered');assert.equal(b.state,'received');
+  return {a,b,t};
+}
+test('a kept channel carries one bound reply from recipient to inviter on sequence one',async()=>{
+  const progress=[];const {a,b,t}=await delivered({onState:value=>progress.push(value.state)});
+  const message=new TextEncoder().encode('{"v":1,"event":"downloaded"}');
+  const [reply]=await Promise.all([a.awaitReply(),b.reply({payload:message})]);
+  assert.deepEqual(reply,message);assert.equal(a.state,'replied');assert.equal(b.state,'replied');
+  assert.deepEqual(progress.slice(-3),['delivered','awaiting-reply','replied']);
+  const replies=t.sent.filter(m=>m.role==='recipient'&&m.kind==='packet'&&m.sequence===1);assert.equal(replies.length,1);assert.equal(replies[0].value.seq,1);
+  assert.equal(JSON.stringify(replies[0].value).includes('downloaded'),false);
+  await assert.rejects(a.awaitReply());await assert.rejects(b.reply({payload:message}));a.dispose();b.dispose();assert.equal(a.state,'replied');
+});
+test('replies need keepOpen on both ends and stay within 1,024 bytes',async()=>{
+  const {a,b}=flows();await Promise.all([a.pair(),b.pair()]);a.verify({matches:true});b.verify({matches:true});
+  await Promise.all([a.send({payload:new Uint8Array([1])}),b.receive()]);
+  await assert.rejects(a.awaitReply());await assert.rejects(b.reply({payload:new Uint8Array([2])}));
+  const kept=await delivered();await assert.rejects(kept.b.reply({payload:new Uint8Array(1025)}));
+  await assert.rejects(kept.a.send({payload:new Uint8Array([1]),keepOpen:'yes'}));
+  const [reply]=await Promise.all([kept.a.awaitReply(),kept.b.reply({payload:new Uint8Array(1024)})]);assert.equal(reply.length,1024);
+});
+test('a tampered reply fails the inviter without reporting one',async()=>{
+  const {a,b}=await delivered({transform:(role,input,value)=>role==='recipient'&&input.kind==='packet'&&input.sequence===1?{...value,ciphertext:(value.ciphertext[0]==='A'?'B':'A')+value.ciphertext.slice(1)}:value});
+  const waiting=a.awaitReply();await b.reply({payload:new Uint8Array([9])});await assert.rejects(waiting);assert.equal(a.state,'failed');
+});
+test('an uncertain reply upload retries identical ciphertext on sequence one',async()=>{
+  let once=true;const {a,b,t}=await delivered({transform:(role,input,value)=>{
+    if(role==='recipient'&&input.kind==='packet'&&input.sequence===1&&once){once=false;throw new ForegatherTransportError('timeout');}return value;
+  }});
+  const [reply]=await Promise.all([a.awaitReply(),b.reply({payload:new Uint8Array([7,7])})]);assert.deepEqual(reply,new Uint8Array([7,7]));
+  const writes=t.sent.filter(m=>m.role==='recipient'&&m.kind==='packet'&&m.sequence===1);assert.equal(writes.length,2);assert.deepEqual(writes[0].value,writes[1].value);
+});
+test('a kept channel closes at the deadline; the delivered transfer keeps its state',async()=>{
+  const current=()=>Math.floor(Date.now()/1000),offer=createLiveOffer({namespace,purpose,now:current(),lifetime:2}),t=transports();
+  const base={...offer,namespace,purpose,now:current};
+  const a=createPairingFlow({...base,role:'inviter',transport:t.a}),b=createPairingFlow({...base,role:'recipient',transport:t.b});
+  const watchdog=setTimeout(()=>{a.cancel();b.cancel();},4500);
+  try{
+    await Promise.all([a.pair(),b.pair()]);a.verify({matches:true});b.verify({matches:true});
+    await Promise.all([a.send({payload:new Uint8Array([1]),keepOpen:true}),b.receive({keepOpen:true})]);
+    const waiting=a.awaitReply();await assert.rejects(waiting,error=>error instanceof ForegatherTransportError&&error.kind==='expired');assert.equal(a.state,'expired');
+    await new Promise(resolve=>setTimeout(resolve,50));assert.equal(b.state,'received');
+    await assert.rejects(b.reply({payload:new Uint8Array([1])}),error=>error instanceof ForegatherTransportError&&error.kind==='expired');
+  }finally{clearTimeout(watchdog);a.dispose();b.dispose();}
+});
