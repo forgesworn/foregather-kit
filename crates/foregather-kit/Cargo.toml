@@ -16,7 +16,7 @@ readme = "../../README.md"
 subtle.workspace = true
 sha2.workspace = true
 hmac = "0.12"
-hkdf = { version = "0.12", optional = true }
+hkdf = { version = "0.13", optional = true }
 spake2 = { version = "=0.4.0", default-features = false, optional = true }
 curve25519-dalek = { version = "4", optional = true }
 aes-gcm = { version = "0.10.3", features = ["zeroize"] }
