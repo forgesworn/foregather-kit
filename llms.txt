@@ -7,6 +7,12 @@ Foregather returns application input for explicit review. Applications own room
 admission, identity, membership, consent, replay policy and continuing traffic.
 Live PAKE is experimental, unaudited and not RFC 9382 wire compatible.
 
+## ForgeSworn ecosystem
+
+- [ForgeSworn library guide](https://forgesworn.dev/llms.txt): Find related libraries, tools and integration guides by task and runtime.
+- [ForgeSworn on GitHub](https://github.com/forgesworn): Browse the organisation’s public repositories.
+- [Project source](https://github.com/forgesworn/foregather-kit): Canonical source repository, documentation and release information.
+
 ## Documentation
 - [Overview and examples](https://github.com/forgesworn/foregather-kit/blob/main/README.md)
 - [Documentation index](https://github.com/forgesworn/foregather-kit/blob/main/docs/README.md)
